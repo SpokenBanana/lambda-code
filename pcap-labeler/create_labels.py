@@ -89,7 +89,7 @@ def get_time_ranges():
     return results
 
 
-def create_time_ranges(netflow):
+def create_time_ranges(netflow, is_binet=False):
     """Create time ranges from the netflow data.
 
     Must contain the start time, duration, source ip address, and label.
@@ -100,19 +100,28 @@ def create_time_ranges(netflow):
     with open('netflows/' + netflow, 'r+') as f:
         f.readline()
         for line in f:
-            info = wstrip.split(line.strip())
-
-            # Double check this with the netlfows.
-            start_time = datetime.strptime(
-                    info[0] + ' ' + info[1], NET_TIME)
-            dur = float(info[2])
-            label = info[-1]
-            ip = info[4].split(':')[0]
-
-            ips.add(ip)
-            time_range.append(TimeRange(start_time, dur, label, ip))
+            if is_binet:
+                tr = get_time_range_from_binetflow(line.strip())
+            else:
+                tr = get_time_range_from_netflow(line.strip())
+            ips.add(tr.ip)
+            time_range.append(tr)
     print('done with', netflow)
     return time_range, ips
+
+
+def get_time_range_from_netflow(line):
+    """Assumes line from netflow was already stripped."""
+    info = wstrip.split(line)
+    start_time = datetime.strptime(info[0] + ' ' + info[1], NET_TIME)
+    dur = float(info[2])
+    label = info[-1]
+    ip = info[4].split(':')[0]
+    return TimeRange(start_time, dur, label, ip)
+
+
+def get_time_range_from_binetflow(line):
+    pass
 
 
 def get_time_info(pcap_filename):
