@@ -1,0 +1,18 @@
+starting aggregated_pcap/capture20110811.featureset.csv
+Recall: 0.05838815789473684, Precision: 0.25393419170243203
+starting aggregated_pcap/capture20110817.featureset.csv
+Recall: 0.5433801098230628, Precision: 0.6248947516138086
+starting aggregated_pcap/capture20110815-2.featureset.csv
+Recall: 0.0056657223796034, Precision: 0.09523809523809523
+starting aggregated_pcap/capture20110812.featureset.csv
+Recall: 0.05008483629736693, Precision: 0.3233265720081136
+starting aggregated_pcap/capture20110815.featureset.csv
+Recall: 0.2494172494172494, Precision: 0.8359375
+starting aggregated_pcap/capture20110816.featureset.csv
+Recall: 0.0, Precision: 0.0
+starting aggregated_pcap/capture20110818.featureset.csv
+Recall: 0.8722067039106145, Precision: 0.9920571882446386
+starting aggregated_pcap/capture20110816-3.featureset.csv
+Recall: 0.0, Precision: 0.0
+starting aggregated_pcap/capture20110816-2.featureset.csv
+Recall: 0.0, Precision: 0.0
