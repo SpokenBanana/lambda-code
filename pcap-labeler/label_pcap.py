@@ -101,9 +101,10 @@ def find_label_for(pcap, info):
                         str(b[8]),  # TTL
                         str(b[9]),  # protocol of IP payload
                         time_and_ip[key]
-                        # TODO: Extend this featureset once more is known.
+                        # TODO: Extend this featureset once more is known about
+                        #       The rest of them.
                     ]
-                    out.write(','.join(features)+ '\n')
+                    out.write(','.join(features) + '\n')
                     labeled += 1
     print('{}/{}'.format(labeled, len(time_and_ip)))
 
