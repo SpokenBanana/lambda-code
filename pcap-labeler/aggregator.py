@@ -10,23 +10,75 @@ from datetime import datetime, timedelta
 
 PCAP_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
-def write_aggregated_file(filename):
+class Summary:
+
+    def __init__(self):
+        self.average_packet = 0
+        self.packet_count = 0
+
+        self.average_ttl = 0
+        self.ttl_count = 0
+
+        self.average_fragment_count = 0
+
+        self.n_udp = 0
+        self.n_tcp = 0
+        self.n_icmp = 0
+        self.label = False
+
+    def add(self, features):
+        self.packet_count += 1
+        self.average_packet += (
+                features['packet_length']
+                - self.average_packet) / self.packet_count
+
+        self.ttl_count += 1
+        self.average_ttl += (
+                features['TTL'] - self.average_ttl) / self.packet_count
+
+        self.average_fragment_count += 1
+
+        proto = int(features['proto'])
+
+        if proto == 1:
+            self.n_udp += 1
+        elif proto == 6:
+            self.n_tcp += 1
+        elif proto == 17:
+            self.n_icmp += 1
+
+        if features['label'] == 'Botnet':
+            self.label = True
+
+    def to_feature_array():
+        return [
+            self.n_udp,
+            self.n_tcp,
+            self.n_icmp,
+            self.average_packet,
+            self.average_ttl,
+            self.average_fragment_count,
+            'Botnet' if self.label else 'Normal'
+        ]
+
+
+def write_aggregated_file(filename, directory):
     features = []
     basename = filename.split('.')[0].split('/')[1]
     with open(filename, 'r+') as f:
-        with open('aggregated_pcap/'+basename + '.featureset.csv',
+        with open(directory + '/'+basename + '.featureset.csv',
                 'w+') as out:
             headers = f.readline().strip().split(',')
             last = None
             bound = None
             current = list(range(4))
             feats = [
+                'proto',
                 'packet_length',
                 'fragment_offset',
-                'TTL',
-                'proto'
+                'TTL'
             ]
-            is_botnet = False
+            summary = Summary()
             for line in f:
                 info = line.strip().split(',')
                 features = dict(zip(headers, info))
@@ -35,32 +87,20 @@ def write_aggregated_file(filename):
                 if last is None or time > bound:
                     last = time
                     bound = last + timedelta(seconds=.15)
-                    out.write(','.join([str(x) for x in current]
-                        ) + ',{}\n'.format(
-                        'Botnet' if is_botnet else 'Normal'))
-                    current = [0, 0, 0, 0, 0, 0]
-                    is_botnet = False
+                    current = summary.to_feature_array()
+                    out.write(','.join([str(x) for x in current]))
+                    summary = Summary()
                     # Write the features to out.
                 elif last < time < bound:
                     # Fill the features in.
-                    proto = int(features['proto'])
-                    if proto == 1:
-                        current[0] += 1
-                    elif proto == 6:
-                        current[1] += 1
-                    elif proto == 17:
-                        current[2] += 1
-
-                    current[3] += int(features['packet_length'])
-                    current[4] += int(features['fragment_offset'])
-                    current[5] += int(features['TTL'])
-                    if features['label'] == 'Botnet':
-                        is_botnet = True
+                    summary.add(features)
             print('finished', filename)
 
 
 if __name__ == '__main__':
     data = os.listdir('pcap_feature_label')
     data = ['pcap_feature_label/' + x for x in data]
+    directory = 'aggregated_pcap'
+    # directory = 'new_features_aggregation'
     for d in data:
-        write_aggregated_file(d)
+        write_aggregated_file(d, directory)
