@@ -221,8 +221,8 @@ def match_time_with(time_range, pcap_filename, ips):
             for line in f:
                 total += 1
                 str_time, str_ip = line.strip().split(',')
-                str_time = str_time[:-3]
-                time = datetime.strptime(str_time, '%Y-%m-%d %H:%M:%S.%f')
+                # str_time = str_time[:-3]
+                time = datetime.strptime(str_time[:-3], '%Y-%m-%d %H:%M:%S.%f')
                 # if time < start_time:
                 #     continue
 
