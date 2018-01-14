@@ -1,3 +1,5 @@
+import numpy as np
+from utils import get_feature_order
 
 class Summarizer:
     def __init__(self):
@@ -26,12 +28,21 @@ class Summarizer:
             'std_ip_b': 0,
             'std_ip_c': 0,
             'std_packet': 0,
-            'std_port': 0,
+            'std_srcport': 0,
+            'std_dstport': 0,
             'std_bytes': 0,
             'std_time': 0,
             'std_state': 0
             # TODO: Investigate how to add the new interesting feature.
         }
+
+        self._packets = []
+        self._dstports = []
+        self._srcports = []
+        self._bytes = []
+        self._time = []
+        self._states = []
+
         self.is_attack = 0  # would be 1 if it is an attack, set 0 by default
         self._duration = 0
         self.used = False
@@ -46,6 +57,14 @@ class Summarizer:
 
         self._duration += float(item['dur'])
         self.data['avg_duration'] = self._duration / self.data['n_conn']
+
+        self._time.append(float(item['dur']))
+        self._packets.append(float(item['totpkts']))
+        self._bytes.append(float(item['totbytes']))
+        self._srcports.append(int(item['dport']))
+        self._dstports.append(int(item['sport']))
+        # TODO: Add states.
+
 
         # sometimes ports are in a weird format so exclude them for now
         try:
@@ -75,10 +94,16 @@ class Summarizer:
         self.data['n_d_%s_p_address' % classify(item['dstaddr'])] += 1
 
 
-    def get_feature_list():
+    def get_feature_list(self):
         """Returns all the feautres along with label as one list of strings."""
+        self.data['std_packet'] = np.std(self._packets)
+        self.data['std_time'] = np.std(self._time)
+        self.data['std_bytes'] = np.std(self._bytes)
+        self.data['std_srcport'] = np.std(self._srcports)
+        self.data['std_dsrtport'] = np.std(self._dstports)
+
         feature_list = []
-        for key in get_feature_order:
+        for key in get_feature_order():
             feature_list.append(str(self.data[key]))
 
         feature_list.append('Botnet' if self.is_attack else 'Normal')

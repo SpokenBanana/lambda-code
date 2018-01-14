@@ -4,7 +4,6 @@ from sklearn import svm, tree
 from sklearn.naive_bayes import GaussianNB
 from sklearn.ensemble import RandomForestClassifier
 import os
-from summarizer import Summarizer
 import matplotlib as plt
 from itertools import cycle
 
