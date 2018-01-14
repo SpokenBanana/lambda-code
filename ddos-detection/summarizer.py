@@ -1,4 +1,5 @@
 import numpy as np
+import collections
 from utils import get_feature_order
 
 class Summarizer:
@@ -36,6 +37,7 @@ class Summarizer:
             # TODO: Investigate how to add the new interesting feature.
         }
 
+        self._ips = []
         self._packets = []
         self._dstports = []
         self._srcports = []
@@ -58,13 +60,13 @@ class Summarizer:
         self._duration += float(item['dur'])
         self.data['avg_duration'] = self._duration / self.data['n_conn']
 
+        self._ips.append(item['srcaddr'])
         self._time.append(float(item['dur']))
         self._packets.append(float(item['totpkts']))
         self._bytes.append(float(item['totbytes']))
         self._srcports.append(int(item['dport']))
         self._dstports.append(int(item['sport']))
         # TODO: Add states.
-
 
         # sometimes ports are in a weird format so exclude them for now
         try:
@@ -93,9 +95,9 @@ class Summarizer:
         self.data['n_s_%s_p_address' % classify(item['srcaddr'])] += 1
         self.data['n_d_%s_p_address' % classify(item['dstaddr'])] += 1
 
-
     def get_feature_list(self):
         """Returns all the feautres along with label as one list of strings."""
+        self.data['std_ip_a'] = entropy(self._ips)
         self.data['std_packet'] = np.std(self._packets)
         self.data['std_time'] = np.std(self._time)
         self.data['std_bytes'] = np.std(self._bytes)
@@ -108,6 +110,13 @@ class Summarizer:
 
         feature_list.append('Botnet' if self.is_attack else 'Normal')
         return feature_list
+
+
+def entropy(items):
+    C = collections.Counter(items)
+    counts  = np.array(list(C.values()),dtype=float)
+    prob    = counts/counts.sum()
+    return (-prob*np.log2(prob)).sum()
 
 
 def classify(ip):
