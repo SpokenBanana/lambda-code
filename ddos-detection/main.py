@@ -31,11 +31,14 @@ def aggregate_file(interval, file_name, start=None):
 
     start = datetime.strptime(start, TIME_FORMAT)
     summaries = [Summarizer() for _ in range(10)]
-    self.total = 0
+    total = 0
+    botnets = 0
+    background = 0
+    normal = 0
     with open(file_name, 'r+') as data:
         headers = data.readline().strip().lower().split(',')
         for line in data:
-            self.total += 1
+            total += 1
             args = line.strip().split(',')
             time = datetime.strptime(args[0], TIME_FORMAT)
             window = int((time - start).total_seconds() / interval)
@@ -46,11 +49,19 @@ def aggregate_file(interval, file_name, start=None):
                     summaries.append(Summarizer())
             item = dict(zip(headers, args))
             if 'Background' in item['label']:
+                background += 1
                 continue
+            elif 'Normal' in item['label']:
+                normal += 1
+            elif 'Botnet' in item['label']:
+                botnets += 1
+
             summaries[window].add(item)
 
     summaries = [s for s in summaries if s.used]
     print('Got {}/{}'.format(len(summaries), total))
+    print('{} botnets, {} normal, {} background'.format(botnets, normal,
+          background))
     basename = get_base_name(file_name)
     with open('aggregated_binetflows/{}'.format(basename), 'w+') as out:
         for summary in summaries:
