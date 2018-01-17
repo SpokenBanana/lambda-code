@@ -6,7 +6,8 @@ from sklearn.metrics import f1_score, accuracy_score, precision_score, \
 from datetime import datetime
 from utils import save_results, get_classifier, get_file_num, \
         pickle_summarized_data, get_saved_data, get_binetflow_files, \
-        get_feature_labels, to_tf_label, get_start_time_for, TIME_FORMAT
+        get_feature_labels, to_tf_label, get_start_time_for, TIME_FORMAT, \
+        get_feature_order
 import tensorflow as tf
 from summarizer import Summarizer
 import numpy as np
@@ -35,6 +36,7 @@ def aggregate_file(interval, file_name, start=None):
     botnets = 0
     background = 0
     normal = 0
+    print('starting', file_name)
     with open(file_name, 'r+') as data:
         headers = data.readline().strip().lower().split(',')
         for line in data:
@@ -63,7 +65,8 @@ def aggregate_file(interval, file_name, start=None):
     print('{} botnets, {} normal, {} background'.format(botnets, normal,
           background))
     basename = get_base_name(file_name)
-    with open('aggregated_binetflows/{}'.format(basename), 'w+') as out:
+    with open('aggregated_binetflows/{}.aggregated.csv'.format(basename), 'w+') as out:
+        out.write(','.join(get_feature_order()) + ',label\n')
         for summary in summaries:
             out.write(','.join(summary.get_feature_list()) + '\n')
 
@@ -80,7 +83,7 @@ if __name__ == '__main__':
     binet_files = [
         'binetflows/capture20110815.binetflow',
         'binetflows/capture20110818.binetflow',
-        'binetflows/capture20110818-2'
+        'binetflows/capture20110818-2.binetflow'
     ]
 
     for binet in binet_files:

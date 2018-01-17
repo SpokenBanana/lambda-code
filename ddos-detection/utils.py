@@ -103,14 +103,7 @@ def get_files_with_bot(bot):
 
 
 def get_feature_order():
-    return ['n_s_b_p_address', 'n_s_a_p_address', 'std_packet',
-            'n_dports<1024', 'std_ip_b', 'n_tcp', 'n_sports>1024', 'n_udp',
-            'std_state', 'std_bytes', 'std_time', 'std_ip_a', 'n_dports>1024',
-            'n_d_c_p_address', 'n_s_c_p_address', 'normal_flow_count',
-            'std_ip_c', 'n_d_a_p_address', 'n_d_b_p_address',
-            'background_flow_count', 'n_icmp', 'n_d_na_p_address', 'n_conn',
-            'avg_duration', 'n_sports<1024', 'std_port', 'n_s_na_p_address']
-
+    return ['n_icmp', 'n_tcp', 'std_dstport', 'n_d_na_p_address', 'n_d_a_p_address', 'n_dports<1024', 'n_s_b_p_address', 'n_conn', 'std_packet', 'std_ip_a', 'std_time', 'std_ip_b', 'n_sports>1024', 'n_s_na_p_address', 'n_s_a_p_address', 'std_ip_c', 'background_flow_count', 'n_d_c_p_address', 'avg_duration', 'normal_flow_count', 'std_state', 'n_s_c_p_address', 'std_srcport', 'n_sports<1024', 'std_bytes', 'n_udp', 'n_d_b_p_address', 'n_dports>1024']
 
 def get_v2_order():
     # 22 features

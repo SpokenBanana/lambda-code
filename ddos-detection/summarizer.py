@@ -64,8 +64,11 @@ class Summarizer:
         self._time.append(float(item['dur']))
         self._packets.append(float(item['totpkts']))
         self._bytes.append(float(item['totbytes']))
-        self._srcports.append(int(item['dport']))
-        self._dstports.append(int(item['sport']))
+        try:
+            self._srcports.append(int(item['dport']) if item['dport'] else 0)
+            self._dstports.append(int(item['sport']) if item['sport'] else 0)
+        except Exception:
+            pass
         # TODO: Add states.
 
         # sometimes ports are in a weird format so exclude them for now
