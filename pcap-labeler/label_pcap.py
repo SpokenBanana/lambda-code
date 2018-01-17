@@ -14,22 +14,18 @@ We now have each pcap file labeled. They just need to be aggregated with
 aggregator.py
 """
 from datetime import datetime, timedelta
-from multiprocessing import Pool
-import multiprocessing
 import os
 from os.path import basename
 import dpkt
-import numpy
-import pickle
-import socket
-import re
 from create_labels import inet_to_str
 
 PCAP_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
+
 def get_files(directory):
     files = os.listdir(directory)
     return ['{}/{}'.format(directory, name) for name in files]
+
 
 class Label:
     def __init__(self, time, ip):
@@ -48,24 +44,33 @@ class Label:
 
 
 def find_label_for(pcap, info):
+    print('starting', pcap)
     base = basename(pcap)
     time_and_ip = {}
+    total = 0
     with open(info, 'r+') as f:
         for line in f:
+            total += 1
             time, ip, label = line.strip().split(',')
             lab = Label(time, ip)
             time_and_ip[lab] = label
-
+    print(total, '==', len(time_and_ip))
     labeled = 0
     with open(pcap, 'rb') as fpcap:
-        with open('pcap_feature_label/{}.featureset.csv'.format(base),
+        with open(
+                'pcap_feature_label/{}.featureset.csv'.format(base),
                 'w+') as out:
             header = [
                 'start_time',
                 'packet_length',
                 'fragment_offset',
-                'TTL',
+                'ttl',
                 'proto',
+                'pns',
+                'pnd',
+                'hs',
+                'ws',
+                'tcp-flag',
                 'label'
             ]
             out.write(','.join(header) + '\n')
@@ -99,14 +104,30 @@ def find_label_for(pcap, info):
                         str((b[2] << 8) + b[3]),  # packet length
                         str(int(b[7] > 0)),  # fragment offset
                         str(b[8]),  # TTL
+                        # 6 == tcp, 17 == udp
                         str(b[9]),  # protocol of IP payload
-                        time_and_ip[key]
                         # TODO: Extend this featureset once more is known about
                         #       The rest of them.
+                        # transport payload indication
+                        # pns
+                        b[20] << 8 + b[21] if blen > 27 else -1,
+                        # pnd
+                        (b[22] << 8) + b[23] if blen > 27 else -1,
+
+                        # hs
+                        b[32] >> 4 if blen > 39 and b[9] == 6 else -1,
+
+                        # ws
+                        (b[34] << 8) + b[35] if blen > 39 and b[9] == 6 else -1,
+
+                        # tcp flag
+                        b[33] if blen > 27 else -1,
+
+                        time_and_ip[key]
                     ]
-                    out.write(','.join(features) + '\n')
+                    out.write(','.join(str(x) for x in features) + '\n')
                     labeled += 1
-    print('{}/{}'.format(labeled, len(time_and_ip)))
+    print('{}/{}'.format(labeled, total))
 
 
 if __name__ == '__main__':
@@ -117,5 +138,3 @@ if __name__ == '__main__':
     for pcap, info in zip(pcap_files, info_files):
         print('starting', pcap, info)
         find_label_for(pcap, info)
-
-
