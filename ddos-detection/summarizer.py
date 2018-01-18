@@ -100,7 +100,7 @@ class Summarizer:
 
     def get_feature_list(self):
         """Returns all the feautres along with label as one list of strings."""
-        self.data['std_ip_a'] = entropy(self._ips)
+        self.data['entropy_ip_a'] = entropy(self._ips)
         self.data['std_packet'] = np.std(self._packets)
         self.data['std_time'] = np.std(self._time)
         self.data['std_bytes'] = np.std(self._bytes)
@@ -117,9 +117,9 @@ class Summarizer:
 
 def entropy(items):
     C = collections.Counter(items)
-    counts  = np.array(list(C.values()),dtype=float)
-    prob    = counts/counts.sum()
-    return (-prob*np.log2(prob)).sum()
+    counts = np.array(list(C.values()), dtype=float)
+    prob = counts / counts.sum()
+    return (-prob * np.log2(prob)).sum()
 
 
 def classify(ip):
