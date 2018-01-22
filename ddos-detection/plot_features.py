@@ -42,14 +42,20 @@ if __name__ == '__main__':
         'capture20110818.aggregated.csv',
         'capture20110815.aggregated.csv'
     ]
+    files = ['ddos.featureset.csv']
     files = ['{}/{}'.format(directory, f) for f in files]
     features = [
-        'n_conn',
         'std_packet',
         'std_bytes',
         'std_time',
         'entropy_dstport',
         'entropy_srcport',
+        'entropy_srcip',
+        'entropy_dstip',
+        'entropy_sports>1024',
+        'entropy_sports<1024',
+        'entropy_dports>1024',
+        'entropy_dports<1024',
         'entropy_state',
         'std_bytes',
         # TODO: Add the rest of the 17 features here.

@@ -64,17 +64,26 @@ def aggregate_file(interval, file_name, start=None):
     print('Got {}/{}'.format(len(summaries), total))
     print('{} botnets, {} normal, {} background'.format(botnets, normal,
           background))
-    basename = get_base_name(file_name)
-    with open('minute_aggregated/{}.aggregated.csv'.format(basename), 'w+') as out:
-        out.write(','.join(get_feature_order()) + ',label\n')
+    append_to_ddos_featureset(summaries)
+
+    # Use this if you want a featureset for each file.
+
+    # basename = get_base_name(file_name)
+    # filename = 'minute_aggregated/{}.aggregated.csv'.format(basename)
+    # write_featureset(filename, summaries)
+
+
+def append_to_ddos_featureset(summaries):
+    with open('minute_aggregated/ddos.featureset.csv', 'a') as out:
         for summary in summaries:
             out.write(','.join(summary.get_feature_list()) + '\n')
 
 
-def aggregate_and_pickle(interval, file_name, start=None):
-    summary = aggregate_file(interval, file_name, start)
-    pickle_summarized_data(interval, file_name, summary)
-    return summary
+def write_featureset(filename, summaries):
+    with open(filename, 'w+') as out:
+        out.write(','.join(get_feature_order()) + ',label\n')
+        for summary in summaries:
+            out.write(','.join(summary.get_feature_list()) + '\n')
 
 
 if __name__ == '__main__':
@@ -85,6 +94,10 @@ if __name__ == '__main__':
         'binetflows/capture20110818.binetflow',
         'binetflows/capture20110818-2.binetflow'
     ]
+
+    # Set up the file that holds all this information.
+    with open('minute_aggregated/ddos.featureset.csv', 'w+') as out:
+        out.write(','.join(Summarizer().features) + ',label\n')
 
     for binet in binet_files:
         aggregate_file(60, binet)
