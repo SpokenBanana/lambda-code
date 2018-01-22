@@ -65,7 +65,7 @@ def aggregate_file(interval, file_name, start=None):
     print('{} botnets, {} normal, {} background'.format(botnets, normal,
           background))
     basename = get_base_name(file_name)
-    with open('aggregated_binetflows/{}.aggregated.csv'.format(basename), 'w+') as out:
+    with open('minute_aggregated/{}.aggregated.csv'.format(basename), 'w+') as out:
         out.write(','.join(get_feature_order()) + ',label\n')
         for summary in summaries:
             out.write(','.join(summary.get_feature_list()) + '\n')
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     ]
 
     for binet in binet_files:
-        aggregate_file(1, binet)
+        aggregate_file(60, binet)
 
     # Avoid error in keras
     import gc

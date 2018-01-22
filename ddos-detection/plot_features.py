@@ -36,18 +36,23 @@ def plot_histogram_of(filename, feature, save=False):
 
 
 if __name__ == '__main__':
-    filename = 'aggregated_binetflows/capture20110818-2.aggregated.csv'
+    directory = 'minute_aggregated'
     files = [
-        'aggregated_binetflows/capture20110818-2.aggregated.csv',
-        'aggregated_binetflows/capture20110818.aggregated.csv',
-        'aggregated_binetflows/capture20110815.aggregated.csv'
+        'capture20110818-2.aggregated.csv',
+        'capture20110818.aggregated.csv',
+        'capture20110815.aggregated.csv'
     ]
+    files = ['{}/{}'.format(directory, f) for f in files]
     features = [
+        'n_conn',
         'std_packet',
         'std_bytes',
         'std_time',
-        'std_dstport',
+        'entropy_dstport',
+        'entropy_srcport',
+        'entropy_state',
         'std_bytes',
+        # TODO: Add the rest of the 17 features here.
     ]
     for f in files:
         for feature in features:

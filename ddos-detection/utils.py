@@ -103,7 +103,8 @@ def get_files_with_bot(bot):
 
 
 def get_feature_order():
-    return ['n_icmp', 'n_tcp', 'std_dstport', 'n_d_na_p_address', 'n_d_a_p_address', 'n_dports<1024', 'n_s_b_p_address', 'n_conn', 'std_packet', 'std_ip_a', 'std_time', 'std_ip_b', 'n_sports>1024', 'n_s_na_p_address', 'n_s_a_p_address', 'std_ip_c', 'background_flow_count', 'n_d_c_p_address', 'avg_duration', 'normal_flow_count', 'std_state', 'n_s_c_p_address', 'std_srcport', 'n_sports<1024', 'std_bytes', 'n_udp', 'n_d_b_p_address', 'n_dports>1024']
+    return ['n_s_a_p_address', 'std_ip_c', 'background_flow_count', 'n_sports<1024', 'std_packet', 'normal_flow_count', 'std_bytes', 'entropy_state', 'n_d_a_p_address', 'n_conn', 'n_d_c_p_address', 'n_sports>1024', 'entropy_srcport', 'n_d_na_p_address', 'n_s_c_p_address', 'n_dports>1024', 'std_ip_b', 'n_dports<1024', 'n_tcp', 'n_s_b_p_address', 'n_udp', 'entropy_dstport', 'n_s_na_p_address', 'avg_duration', 'std_time', 'n_icmp', 'n_d_b_p_address', 'std_ip_a', 'src_to_dst']
+
 
 def get_v2_order():
     # 22 features
