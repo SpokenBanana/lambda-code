@@ -1,46 +1,64 @@
 import numpy as np
 import collections
-from utils import get_feature_order
 from scipy.stats import entropy as entropy_vector
 
 
 class Summarizer:
     def __init__(self):
-        self.data = {
-            'n_conn': 0,
-            'avg_duration': 0,
-            'n_udp': 0,
-            'n_tcp': 0,
-            'n_icmp': 0,
-            'n_sports>1024': 0,
-            'n_sports<1024': 0,
-            'n_dports>1024': 0,
-            'n_dports<1024': 0,
-            'n_s_a_p_address': 0,
-            'n_s_b_p_address': 0,
-            'n_s_c_p_address': 0,
-            'n_s_na_p_address': 0,
-            'n_d_a_p_address': 0,
-            'n_d_b_p_address': 0,
-            'n_d_c_p_address': 0,
-            'n_d_na_p_address': 0,
-            'normal_flow_count': 0,
-            'background_flow_count': 0,
+        self.features = [
+            'n_conn',
+            'avg_duration',
+            'n_udp',
+            'n_tcp',
+            'n_icmp',
+            'n_sports>1024',
+            'n_sports<1024',
+            'n_dports>1024',
+            'n_dports<1024',
+            'n_s_a_p_address',
+            'n_s_b_p_address',
+            'n_s_c_p_address',
+            'n_s_na_p_address',
+            'n_d_a_p_address',
+            'n_d_b_p_address',
+            'n_d_c_p_address',
+            'n_d_na_p_address',
+            'normal_flow_count',
+            'background_flow_count',
             # New features
-            'std_ip_a': 0,
-            'std_ip_b': 0,
-            'std_ip_c': 0,
-            'std_packet': 0,
-            'entropy_srcport': 0,
-            'entropy_dstport': 0,
-            'std_bytes': 0,
-            'std_time': 0,
-            'entropy_state': 0,
+            'entropy_srcip',
+            'entropy_dstip',
+            'std_packet',
+            'entropy_srcport',
+            'entropy_dstport',
+            'std_bytes',
+            'std_time',
+            'entropy_time',
+            'entropy_state',
             # TODO: Investigate how to add the new interesting feature.
-            'src_to_dst': 0
+            'src_to_dst',
             # TODO: Add std and entropy of new features. Also as entropy time.
+            'entropy_sports>1024',
+            'entropy_sports<1024',
+            'entropy_dports>1024',
+            'entropy_dports<1024'
+        ]
 
+        # Just an easier way to do this since its very repetitive.
+        self.entropy_features = {
+            'entropy_time': collections.Counter(),
+            'entropy_state': collections.Counter(),
+            'entropy_srcport': collections.Counter(),
+            'entropy_dstport': collections.Counter(),
+            'entropy_srcip': collections.Counter(),
+            'entropy_dstip': collections.Counter(),
+            'entropy_sports>1024': collections.Counter(),
+            'entropy_sports<1024': collections.Counter(),
+            'entropy_dports>1024': collections.Counter(),
+            'entropy_dports<1024': collections.Counter()
         }
+
+        self.data = dict(zip(self.features, [0]*len(self.features)))
 
         self._ips = []
         self._packets = []
@@ -48,6 +66,7 @@ class Summarizer:
         self._srcports = collections.Counter()
         self._bytes = []
         self._time = []
+        self._time_counter = collections.Counter()
         self._states = collections.Counter()
 
         self.src_to_dst = {}
@@ -82,6 +101,15 @@ class Summarizer:
         self._time.append(float(item['dur']))
         self._packets.append(float(item['totpkts']))
         self._bytes.append(float(item['totbytes']))
+        self._time_counter[item['dur']] += 1
+
+        self.entropy_features['entropy_time'][item['dur']] += 1
+        self.entropy_features['entropy_state'][item['state']] += 1
+        self.entropy_features['entropy_srcport'][item['sport']] += 1
+        self.entropy_features['entropy_dstport'][item['dport']] += 1
+        self.entropy_features['entropy_srcip'][item['srcaddr']] += 1
+        self.entropy_features['entropy_dstip'][item['dstaddr']] += 1
+
         try:
             self._srcports[item['sport']] += 1
             self._dstports[item['dport']] += 1
@@ -94,16 +122,20 @@ class Summarizer:
         try:
             if int(item['sport']) < 1024:
                 self.data['n_sports<1024'] += 1
+                self.entropy_features['entropy_sports<1024'][item['sport']] += 1
             else:
                 self.data['n_sports>1024'] += 1
+                self.entropy_features['entropy_sports>1024'][item['sport']] += 1
         except Exception:
             pass
 
         try:
             if int(item['dport']) < 1024:
                 self.data['n_dports<1024'] += 1
+                self.entropy_features['entropy_dports<1024'][item['dport']] += 1
             else:
                 self.data['n_dports>1024'] += 1
+                self.entropy_features['entropy_dports>1024'][item['dport']] += 1
         except Exception:
             pass
 
@@ -119,17 +151,17 @@ class Summarizer:
 
     def get_feature_list(self):
         """Returns all the feautres along with label as one list of strings."""
-        self.data['entropy_ip_a'] = entropy(self._ips)
         self.data['std_packet'] = np.std(self._packets)
         self.data['std_time'] = np.std(self._time)
         self.data['std_bytes'] = np.std(self._bytes)
-        self.data['entropy_srcport'] = entropy(self._srcports)
-        self.data['entropy_dsrtport'] = entropy(self._dstports)
-        self.data['entropy_state'] = entropy(self._states)
+
+        for feat in self.entropy_features:
+            self.data[feat] = entropy(self.entropy_features[feat])
+
         self.data['src_to_dst'] = self.calc_src_to_dst()
 
         feature_list = []
-        for key in get_feature_order():
+        for key in self.features:
             feature_list.append(str(self.data[key]))
 
         feature_list.append('Botnet' if self.is_attack else 'Normal')
