@@ -89,13 +89,17 @@ class Summarizer:
         if item['srcaddr'] not in self.src_to_dst:
             dstcounter = collections.Counter()
             dstcounter[item['dstaddr']] += 1
+            byte_counter = collections.Counter()
+            byte_counter[item['totbytes']] += 1
+            time_counter = collections.Counter()
+            time_counter[item['dur']] += 1
             self.src_to_dst[item['srcaddr']] = [dstcounter,
-                    float(item['totbytes']), float(item['dur'])]
+                    byte_counter, time_counter]
         else:
             sofar = self.src_to_dst[item['srcaddr']]
             sofar[0][item['dstaddr']] += 1
-            sofar[1] += float(item['totbytes'])
-            sofar[2] += float(item['dur'])
+            sofar[1][item['totbytes']] += 1
+            sofar[2][item['dur']] += 1
 
         self._ips.append(item['srcaddr'])
         self._time.append(float(item['dur']))
@@ -169,7 +173,7 @@ class Summarizer:
 
     def calc_src_to_dst(self):
         values = list(self.src_to_dst.values())
-        values = [(entropy(x[0]), x[1], x[2]) for x in values]
+        values = [(entropy(x[0]), entropy(x[1]), entropy(x[2])) for x in values]
         entropy_values = [entropy_vector(x) for x in values]
         final_entropy = entropy_vector(entropy_values)
         if str(final_entropy) == '-inf':
