@@ -119,7 +119,6 @@ class Summarizer:
             self._dstports[item['dport']] += 1
         except Exception:
             pass
-        # TODO: Add states.
         self._states[item['state']] += 1
 
         # sometimes ports are in a weird format so exclude them for now
@@ -150,8 +149,12 @@ class Summarizer:
         elif 'Background' in item['label']:
             self.data['background_flow_count'] += 1
 
-        self.data['n_s_%s_p_address' % classify(item['srcaddr'])] += 1
-        self.data['n_d_%s_p_address' % classify(item['dstaddr'])] += 1
+        # TODO: Add entropy for each of these cases.
+        # entropy_features['{}_ip'.format(_class)][item['addr']] += 1
+        src_class = classify(item['srcaddr'])
+        dst_class = classify(item['dstaddr'])
+        self.data['n_s_%s_p_address' % src_class] += 1
+        self.data['n_d_%s_p_address' % dst_class] += 1
 
     def get_feature_list(self):
         """Returns all the feautres along with label as one list of strings."""
