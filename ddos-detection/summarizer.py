@@ -18,11 +18,11 @@ class Summarizer:
             'n_s_a_p_address',
             'n_s_b_p_address',
             'n_s_c_p_address',
-            'n_s_na_p_address',
             'n_d_a_p_address',
             'n_d_b_p_address',
             'n_d_c_p_address',
             'n_d_na_p_address',
+            'n_s_na_p_address',
             'normal_flow_count',
             'background_flow_count',
             # New features
@@ -58,7 +58,7 @@ class Summarizer:
             'entropy_dports<1024': collections.Counter()
         }
 
-        self.data = dict(zip(self.features, [0]*len(self.features)))
+        self.data = dict(zip(self.features, [0] * len(self.features)))
 
         self._ips = []
         self._packets = []
