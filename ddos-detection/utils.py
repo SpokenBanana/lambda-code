@@ -10,6 +10,29 @@ from itertools import cycle
 TIME_FORMAT = "%Y/%m/%d %H:%M:%S.%f"
 
 
+def best_features():
+    return [
+        'std_packets',
+        'std_bytes',
+        'src_to_dst',
+        'entropy_packets',
+        'entropy_src_b_ip',
+        'entropy_bytes',
+        'entropy_state',
+        'entropy_srcport',
+        'entropy_src_bytes',
+        'entropy_dst_b_ip',
+        'entropy_sports>1024',
+        'entropy_dports<1024',
+        'entropy_dstport',
+        'entropy_dst_c_ip',
+        'entropy_dst_a_ip',
+        'entropy_srcip',
+        'entropy_time',
+        'entropy_dstip',
+    ]
+
+
 def save_results(destination_path, file_name, start_time, interval, args,
                  print_contents=False):
     with open(destination_path, 'w+') as out:

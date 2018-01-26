@@ -22,8 +22,6 @@ def get_feature_from(filename, feature_name):
 def plot_histogram_of(filename, feature, save=False):
     name = filename.split('/')[1].split('.')[0]
     normal, botnets = get_feature_from(filename, feature)
-    print('starting', name, feature)
-
     n_normal, bins_normal, patches_normal = plt.hist(
         normal, 50, facecolor='blue', alpha=.5)
     n_botnet, bins_botnet, patches_botnet = plt.hist(

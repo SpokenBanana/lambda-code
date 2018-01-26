@@ -74,7 +74,7 @@ def aggregate_file(interval, file_name, start=None):
 
 
 def append_to_ddos_featureset(summaries):
-    with open('minute_aggregated/ddos.featureset.csv', 'a') as out:
+    with open('minute_aggregated/ddos-10s.featureset.csv', 'a') as out:
         for summary in summaries:
             out.write(','.join(summary.get_feature_list()) + '\n')
 
@@ -96,11 +96,11 @@ if __name__ == '__main__':
     ]
 
     # Set up the file that holds all this information.
-    with open('minute_aggregated/ddos.featureset.csv', 'w+') as out:
+    with open('minute_aggregated/ddos-10s.featureset.csv', 'w+') as out:
         out.write(','.join(Summarizer().features) + ',label\n')
 
     for binet in binet_files:
-        aggregate_file(60, binet)
+        aggregate_file(10, binet)
 
     # Avoid error in keras
     import gc
