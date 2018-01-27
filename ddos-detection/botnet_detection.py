@@ -7,6 +7,10 @@ Good features so far:
     src_to_dst
     entropy of all ports
 """
+from keras.models import Sequential
+from keras.layers import Dense, Dropout
+from keras import backend as K
+from sklearn import tree
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import recall_score, precision_score, accuracy_score
@@ -47,8 +51,37 @@ def get_specific_features_from(filename, feature_names=None):
     return features, labels
 
 
+def dl_trian(features, label):
+    model = Sequential()
+    model.add(
+        Dense(64,
+              input_dim=len(features[0]),
+              kernel_initializer='uniform',
+              activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(2, activation='sigmoid'))
+    model.compile(loss='binary_crossentropy', optimizer='rmsprop',
+                       metrics=['accuracy'])
+    return model
+
+
+def dl_test(model, features, label):
+    predicted = model.predict_classes(features)
+    return (accuracy_score(label, predicted),
+            recall_score(label, predicted),
+            precision_score(label, predicted))
+
+
 def rf_train(features, label):
     clf = RandomForestClassifier()
+    clf.fit(features, label)
+    return clf
+
+
+def dt_train(features, label):
+    clf = tree.DecisionTreeClassifier()
     clf.fit(features, label)
     return clf
 
