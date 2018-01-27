@@ -95,6 +95,32 @@ if __name__ == '__main__':
         'binetflows/capture20110818-2.binetflow'
     ]
 
+    # 1,2,5,9,13
+    spam_files = [
+        'binetflows/capture20110811.binetflow',
+        'binetflows/capture20110812.binetflow',
+
+        'binetflows/capture20110815-2.binetflow',
+
+        'binetflows/capture20110817.binetflow',
+
+        'binetflows/capture20110815-3.binetflow',
+    ]
+
+    # 1-4 and 9-11
+    irc_files = [
+        'binetflows/capture20110810.binetflow',
+        'binetflows/capture20110811.binetflow',
+        'binetflows/capture20110812.binetflow',
+        'binetflows/capture20110815.binetflow',
+
+        'binetflows/capture20110817.binetflow',
+        'binetflows/capture20110818.binetflow',
+        'binetflows/capture20110818-2.binetflow',
+    ]
+
+    p2p_files = ['binetflows/capture20110819.binetflow']
+
     # Set up the file that holds all this information.
     with open('minute_aggregated/ddos-10s.featureset.csv', 'w+') as out:
         out.write(','.join(Summarizer().features) + ',label\n')
