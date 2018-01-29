@@ -4,6 +4,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+def plot_roc_curve(fpr, tpr, auc, name, save=False):
+    plt.plot(fpr, tpr)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False positive rate')
+    plt.ylabel('True positive rate')
+    plt.title('ROC={} for {}'.format(auc, name))
+    if save:
+        plt.save(name)
+    else:
+        plt.show()
+
+
 def get_feature_from(filename, feature_name):
     normal = []
     botnets = []

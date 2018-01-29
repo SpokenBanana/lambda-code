@@ -6,6 +6,16 @@ Good features so far:
     std_time
     src_to_dst
     entropy of all ports
+
+Use for ROC curves:
+    proba = clf.predict_proba(test_features).
+    precision, recall, pr_threshold = precision_recall_curve(test_labels,
+                                                             proba[:, 1])
+    fpr, tpr, _ = roc_curve(test_labels, proba)  # proba[:, 1] for sklearn
+    # roc_auc goes in the title
+    roc_auc = auc(fpr, tpr)
+
+    # Plot fpr vs tpr
 """
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
@@ -13,13 +23,25 @@ from keras import backend as K
 from sklearn import tree
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import recall_score, precision_score, accuracy_score
+from sklearn.metrics import recall_score, precision_score, accuracy_score, \
+    f1_score, precision_recall_curve, roc_curve, auc
 import os
-import numpy
+
 
 def get_files(directory):
     files = os.listdir(directory)
     return ['{}/{}'.format(directory, name) for name in files]
+
+
+def get_roc_metrics(clf, features, labels):
+    proba = clf.predict_proba(features)
+    precision, recall, pr_threshold = precision_recall_curve(labels,
+                                                             proba[:, 1])
+    fpr, tpr, _ = roc_curve(labels, proba)  # proba[:, 1] for sklearn
+
+    # roc_auc goes in the title
+    roc_auc = auc(fpr, tpr)
+    return fpr, tpr, roc_auc
 
 
 def get_feature_labels(filename):
@@ -110,9 +132,9 @@ def train_and_test_on(feature, label):
 
 
 if __name__ == '__main__':
+    print('starting')
     # files = get_files('aggregated_pcap')
 
     # for f in files:
     #     print("Recall: {}, Precision: {}".format(*summary_of_detection(f)))
-    print(summary_of_detection('minute_aggregated/ddos.featureset.csv'))
-
+    # print(summary_of_detection('minute_aggregated/ddos.featureset.csv'))
