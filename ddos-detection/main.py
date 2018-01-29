@@ -1,23 +1,25 @@
-import os
-import math
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import f1_score, accuracy_score, precision_score, \
-    recall_score
+from absl import app
+from absl import flags
 from datetime import datetime
 from utils import save_results, get_classifier, get_file_num, \
         pickle_summarized_data, get_saved_data, get_binetflow_files, \
         get_feature_labels, to_tf_label, get_start_time_for, TIME_FORMAT, \
         get_feature_order
-import tensorflow as tf
 from summarizer import Summarizer
-import numpy as np
+
+
+FLAGS = flags.FLAGS
+flags.DEFINE_string(
+    'attack_type', None, 'Type of files to aggregate together.')
+flags.DEFINE_integer(
+    'interval', None, 'Interval in seconds to aggregate connections.')
 
 
 def get_base_name(filename):
     return filename.split('/')[-1].split('.')[0]
 
 
-def aggregate_file(interval, file_name, start=None):
+def aggregate_file(interval, file_name, output_name, start=None):
     """ Aggregate the data within the windows of time
 
         interval:       time in seconds to aggregate data
@@ -64,7 +66,7 @@ def aggregate_file(interval, file_name, start=None):
     print('Got {}/{}'.format(len(summaries), total))
     print('{} botnets, {} normal, {} background'.format(botnets, normal,
           background))
-    append_to_ddos_featureset(summaries)
+    append_to_ddos_featureset(summaries, output_name)
 
     # Use this if you want a featureset for each file.
 
@@ -73,8 +75,8 @@ def aggregate_file(interval, file_name, start=None):
     # write_featureset(filename, summaries)
 
 
-def append_to_ddos_featureset(summaries):
-    with open('minute_aggregated/ddos-10s.featureset.csv', 'a') as out:
+def append_to_ddos_featureset(summaries, output_name):
+    with open(output_name, 'a') as out:
         for summary in summaries:
             out.write(','.join(summary.get_feature_list()) + '\n')
 
@@ -86,9 +88,7 @@ def write_featureset(filename, summaries):
             out.write(','.join(summary.get_feature_list()) + '\n')
 
 
-if __name__ == '__main__':
-    all_intervals = [.5, 1, 2, 5]
-
+def main(_):
     binet_files = [
         'binetflows/capture20110815.binetflow',
         'binetflows/capture20110818.binetflow',
@@ -122,12 +122,26 @@ if __name__ == '__main__':
     p2p_files = ['binetflows/capture20110819.binetflow']
 
     # Set up the file that holds all this information.
-    with open('minute_aggregated/ddos-10s.featureset.csv', 'w+') as out:
+    output_name = 'minute_aggregated/{}-{}s.featureset.csv'.format(
+        FLAGS.attack_type, FLAGS.interval)
+    with open(output_name, 'w+') as out:
         out.write(','.join(Summarizer().features) + ',label\n')
 
-    for binet in binet_files:
-        aggregate_file(10, binet)
+    attack_files = []
+    if FLAGS.attack_type == 'ddos':
+        attack_files = binet_files
+    elif FLAGS.attack_type == 'spam':
+        attack_files = spam_files
+    elif FLAGS.attack_type == 'irc':
+        attack_files = irc_files
+
+    for binet in attack_files:
+        aggregate_file(FLAGS.interval, binet, output_name)
 
     # Avoid error in keras
     import gc
     gc.collect()
+
+
+if __name__ == '__main__':
+    app.run(main)
