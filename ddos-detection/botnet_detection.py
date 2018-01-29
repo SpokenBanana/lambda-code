@@ -1,12 +1,5 @@
 """Use machine learning on the new files.
 
-TODO: Make it look for the right files. The rest should still be re-usable.
-
-Good features so far:
-    std_time
-    src_to_dst
-    entropy of all ports
-
 Use for ROC curves:
     proba = clf.predict_proba(test_features).
     precision, recall, pr_threshold = precision_recall_curve(test_labels,
@@ -26,6 +19,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import recall_score, precision_score, accuracy_score, \
     f1_score, precision_recall_curve, roc_curve, auc
 import os
+from absl import app
+from absl import flags
+
+FLAGS = flags.FLAGS
+flags.DEFINE_string('attack_type', None, 'Type of attack to train on.')
+flags.DEFINE_integer('interval', None, 'Interval of the file to train on.')
 
 
 def get_files(directory):
@@ -112,16 +111,28 @@ def test(clf, features, label):
     predicted = clf.predict(features)
     return (accuracy_score(label, predicted),
             recall_score(label, predicted),
-            precision_score(label, predicted))
+            precision_score(label, predicted),
+            f1_score(label, predicted))
 
 
 def summary_of_detection(filename):
-    print('starting', filename)
     feature, label = get_feature_labels(filename)
     xtrain, xtest, ytrain, ytest = train_test_split(
         feature, label, test_size=.3, random_state=42)
     model = rf_train(xtrain, ytrain)
     return test(model, xtest, ytest)
+
+
+def get_plots_for_each_interval(clf, attack_type):
+    """clf is a Random Forest model to test this all on."""
+    intervals = [10, 20, 30, 60, 120, 180]
+    scores = []
+    for interval in intervals:
+        filename = 'minute_aggregated/{}-{}s.featureset.csv'.format(
+            attack_type, interval)
+        _, _, _, f1_score = summary_of_detection(filename)
+        scores.append(f1_score)
+    return scores
 
 
 def train_and_test_on(feature, label):
@@ -131,10 +142,12 @@ def train_and_test_on(feature, label):
     return test(model, xtest, ytest)
 
 
-if __name__ == '__main__':
-    print('starting')
-    # files = get_files('aggregated_pcap')
+def main(_):
+    base_name = 'minute_aggregated/{}-{}s.featureset.csv'
+    f = base_name.format(FLAGS.attack_type, FLAGS.interval)
+    print("Accuracy: {}, Recall: {}, Precision: {}, f1_score: {}".format(
+        *summary_of_detection(f)))
 
-    # for f in files:
-    #     print("Recall: {}, Precision: {}".format(*summary_of_detection(f)))
-    # print(summary_of_detection('minute_aggregated/ddos.featureset.csv'))
+
+if __name__ == '__main__':
+    app.run(main)

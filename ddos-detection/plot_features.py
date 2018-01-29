@@ -4,6 +4,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+def plot_f1_per_interval(f1_scores, name, save=False):
+    plt.plot(f1_scores)
+    plt.title(name)
+    if save:
+        plt.save(name + '.png')
+    else:
+        plt.show()
+
+
 def plot_roc_curve(fpr, tpr, auc, name, save=False):
     plt.plot(fpr, tpr)
     plt.xlim([0.0, 1.0])
@@ -12,7 +21,7 @@ def plot_roc_curve(fpr, tpr, auc, name, save=False):
     plt.ylabel('True positive rate')
     plt.title('ROC={} for {}'.format(auc, name))
     if save:
-        plt.save(name)
+        plt.save(name + '.png')
     else:
         plt.show()
 
