@@ -21,6 +21,8 @@ from sklearn.metrics import recall_score, precision_score, accuracy_score, \
 import os
 from absl import app
 from absl import flags
+from utils import best_features
+import numpy as np
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('attack_type', None, 'Type of attack to train on.')
@@ -32,11 +34,18 @@ def get_files(directory):
     return ['{}/{}'.format(directory, name) for name in files]
 
 
-def get_roc_metrics(clf, features, labels):
+def get_roc_metrics(clf, features, labels, sklearn=True):
     proba = clf.predict_proba(features)
-    precision, recall, pr_threshold = precision_recall_curve(labels,
+    if sklearn:
+        precision, recall, pr_threshold = precision_recall_curve(labels,
                                                              proba[:, 1])
-    fpr, tpr, _ = roc_curve(labels, proba)  # proba[:, 1] for sklearn
+    else:
+        precision, recall, pr_threshold = precision_recall_curve(labels,
+                                                             proba)
+    if sklearn:
+        fpr, tpr, _ = roc_curve(labels, proba[:, 1])  # proba[:, 1] for sklearn
+    else:
+        fpr, tpr, _ = roc_curve(labels, proba)
 
     # roc_auc goes in the title
     roc_auc = auc(fpr, tpr)
@@ -52,7 +61,9 @@ def get_feature_labels(filename):
             info = line.strip().split(',')
             features.append([float(x) for x in info[:-1]])
             labels.append(1 if info[-1] == 'Botnet' else 0)
-    return features, labels
+    xtrain, xtest, ytrain, ytest = train_test_split(
+        features, labels, test_size=.3, random_state=42)
+    return xtrain, xtest, ytrain, ytest
 
 
 def get_specific_features_from(filename, feature_names=None):
@@ -69,10 +80,12 @@ def get_specific_features_from(filename, feature_names=None):
             else:
                 features.append([float(x) for x in info[:-1]])
             labels.append(1 if info[-1] == 'Botnet' else 0)
-    return features, labels
+    xtrain, xtest, ytrain, ytest = train_test_split(
+        features, labels, test_size=.3, random_state=42)
+    return xtrain, xtest, ytrain, ytest
 
 
-def dl_trian(features, label):
+def dl_train(features, label):
     model = Sequential()
     model.add(
         Dense(64,
@@ -82,17 +95,20 @@ def dl_trian(features, label):
     model.add(Dropout(0.5))
     model.add(Dense(64, activation='relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(2, activation='sigmoid'))
+    model.add(Dense(1, activation='sigmoid'))
     model.compile(loss='binary_crossentropy', optimizer='rmsprop',
                        metrics=['accuracy'])
+    label = np.reshape(label, (-1, 1))
+    model.fit(features, label, epochs=10, batch_size=32, verbose=False)
     return model
 
 
 def dl_test(model, features, label):
-    predicted = model.predict_classes(features)
+    predicted = model.predict_classes(features, verbose=False)
     return (accuracy_score(label, predicted),
             recall_score(label, predicted),
-            precision_score(label, predicted))
+            precision_score(label, predicted),
+            f1_score(label, predicted))
 
 
 def rf_train(features, label):
@@ -115,15 +131,20 @@ def test(clf, features, label):
             f1_score(label, predicted))
 
 
-def summary_of_detection(filename):
-    feature, label = get_feature_labels(filename)
-    xtrain, xtest, ytrain, ytest = train_test_split(
-        feature, label, test_size=.3, random_state=42)
-    model = rf_train(xtrain, ytrain)
-    return test(model, xtest, ytest)
+def summary_of_detection(filename, model):
+    xtrain, xtest, ytrain, ytest = get_specific_features_from(filename, best_features())
+
+    if model == 'rf':
+        clf = rf_train(xtrain, ytrain)
+    elif model == 'dt':
+        clf = dt_train(xtrain, ytrain)
+    elif model == 'dl':
+        clf = dl_train(xtrain, ytrain)
+        return dl_test(clf, xtrain, ytrain)
+    return test(clf, xtest, ytest)
 
 
-def get_plots_for_each_interval(clf, attack_type):
+def get_plots_for_each_interval(attack_type):
     """clf is a Random Forest model to test this all on."""
     intervals = [10, 20, 30, 60, 120, 180]
     scores = []

@@ -5,7 +5,11 @@ import numpy as np
 
 
 def plot_f1_per_interval(f1_scores, name, save=False):
-    plt.plot(f1_scores)
+    intervals = [10, 20, 30, 60, 120, 180]
+    plt.plot(intervals, f1_scores)
+    plt.xticks(intervals)
+    plt.xlabel('Interval (seconds)')
+    plt.ylabel('f1_score')
     plt.title(name)
     if save:
         plt.save(name + '.png')
@@ -19,7 +23,7 @@ def plot_roc_curve(fpr, tpr, auc, name, save=False):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False positive rate')
     plt.ylabel('True positive rate')
-    plt.title('ROC={} for {}'.format(auc, name))
+    plt.title('ROC={:.2} for {}'.format(auc, name))
     if save:
         plt.save(name + '.png')
     else:
