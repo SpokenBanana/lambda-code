@@ -95,15 +95,15 @@ def dl_train(features, label):
               input_dim=len(features[0]),
               kernel_initializer='uniform',
               activation='relu'))
-    model.add(Dense(64, activation='relu'))
-
     # Added hidden layers.
     model.add(Dense(64, activation='relu'))
     model.add(Dense(64, activation='relu'))
+    model.add(Dropout(0.3))
     model.add(Dense(128, activation='relu'))
     model.add(Dense(128, activation='relu'))
-
-    model.add(Dropout(0.5))
+    model.add(Dropout(0.3))
+    model.add(Dense(246, activation='relu'))
+    model.add(Dropout(0.3))
     model.add(Dense(1, activation='sigmoid'))
     model.compile(loss='binary_crossentropy', optimizer='rmsprop',
                        metrics=['accuracy'])
@@ -175,7 +175,7 @@ def train_and_test_on(feature, label):
 def main(_):
     base_name = 'minute_aggregated/{}-{}s.featureset.csv'
     f = base_name.format(FLAGS.attack_type, FLAGS.interval)
-    print(device_lib.list_local_devices())
+    # print(device_lib.list_local_devices())
     print("Accuracy: {}, Recall: {}, Precision: {}, f1_score: {}".format(
         *summary_of_detection(f, FLAGS.model_type)))
 
