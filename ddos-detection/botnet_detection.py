@@ -17,7 +17,7 @@ from sklearn import tree
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import recall_score, precision_score, accuracy_score, \
-    f1_score, precision_recall_curve, roc_curve, auc
+    f1_score, precision_recall_curve, roc_curve, auc, confusion_matrix
 import os
 from absl import app
 from absl import flags
@@ -87,13 +87,13 @@ def get_specific_features_from(filename, feature_names=None):
 
 def dl_train(features, label):
     model = Sequential()
-    model.add(
-        Dense(64,
-              input_dim=len(features[0]),
-              kernel_initializer='uniform',
-              activation='relu'))
-    model.add(Dropout(0.5))
+    model.add(Dense(64,
+                    input_dim=len(features[0]),
+                    kernel_initializer='uniform',
+                    activation='relu'))
     model.add(Dense(64, activation='relu'))
+    model.add(Dense(128, activation='relu'))
+    model.add(Dense(256, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(1, activation='sigmoid'))
     model.compile(loss='binary_crossentropy', optimizer='rmsprop',
@@ -115,6 +115,17 @@ def rf_train(features, label):
     clf = RandomForestClassifier()
     clf.fit(features, label)
     return clf
+
+
+def rf_compare_estimator_counts(xtrain, xtest, ytrain, ytest):
+    estimator_counts = [50, 100, 200, 300, 500, 700, 800]
+    scores = []
+    for estimator in estimator_counts:
+        clf = RandomForestClassifier(n_estimators=estimator)
+        clf.fit(xtrain, ytrain)
+        _, _, _, f1_score = test(clf, xtest, ytest)
+        scores.append(f1_score)
+    return scores
 
 
 def dt_train(features, label):
@@ -151,7 +162,7 @@ def get_plots_for_each_interval(attack_type):
     for interval in intervals:
         filename = 'minute_aggregated/{}-{}s.featureset.csv'.format(
             attack_type, interval)
-        _, _, _, f1_score = summary_of_detection(filename)
+        _, _, _, f1_score = summary_of_detection(filename, 'rf')
         scores.append(f1_score)
     return scores
 
