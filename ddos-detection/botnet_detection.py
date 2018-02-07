@@ -10,6 +10,7 @@ Use for ROC curves:
 
     # Plot fpr vs tpr
 """
+from tensorflow.python.client import device_lib
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from keras import backend as K
@@ -24,8 +25,10 @@ from absl import flags
 from utils import best_features
 import numpy as np
 
+
 FLAGS = flags.FLAGS
 flags.DEFINE_string('attack_type', None, 'Type of attack to train on.')
+flags.DEFINE_string('model_type', None, 'Type of model to train with.')
 flags.DEFINE_integer('interval', None, 'Interval of the file to train on.')
 
 
@@ -87,14 +90,20 @@ def get_specific_features_from(filename, feature_names=None):
 
 def dl_train(features, label):
     model = Sequential()
-    model.add(Dense(64,
-                    input_dim=len(features[0]),
-                    kernel_initializer='uniform',
-                    activation='relu'))
+    model.add(
+        Dense(64,
+              input_dim=len(features[0]),
+              kernel_initializer='uniform',
+              activation='relu'))
+    # Added hidden layers.
     model.add(Dense(64, activation='relu'))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dropout(0.3))
     model.add(Dense(128, activation='relu'))
-    model.add(Dense(256, activation='relu'))
-    model.add(Dropout(0.5))
+    model.add(Dense(128, activation='relu'))
+    model.add(Dropout(0.3))
+    model.add(Dense(246, activation='relu'))
+    model.add(Dropout(0.3))
     model.add(Dense(1, activation='sigmoid'))
     model.compile(loss='binary_crossentropy', optimizer='rmsprop',
                        metrics=['accuracy'])
@@ -177,8 +186,9 @@ def train_and_test_on(feature, label):
 def main(_):
     base_name = 'minute_aggregated/{}-{}s.featureset.csv'
     f = base_name.format(FLAGS.attack_type, FLAGS.interval)
+    # print(device_lib.list_local_devices())
     print("Accuracy: {}, Recall: {}, Precision: {}, f1_score: {}".format(
-        *summary_of_detection(f)))
+        *summary_of_detection(f, FLAGS.model_type)))
 
 
 if __name__ == '__main__':
