@@ -134,6 +134,8 @@ def main(_):
         attack_files = spam_files
     elif FLAGS.attack_type == 'irc':
         attack_files = irc_files
+    elif FLAGS.attack_type == 'p2p':
+        attack_files = p2p_files
 
     for binet in attack_files:
         aggregate_file(FLAGS.interval, binet, output_name)
