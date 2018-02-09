@@ -1,3 +1,4 @@
+import os
 from absl import app
 from absl import flags
 from datetime import datetime
@@ -63,6 +64,9 @@ def aggregate_file(interval, file_name, output_name, start=None):
             summaries[window].add(item)
 
     summaries = [s for s in summaries if s.used]
+    total_connections = sum(s.data['n_conn'] for s in summaries)
+    print('Average Connection per interval: {}'.format(
+        total_connections / len(summaries)))
     print('Got {}/{}'.format(len(summaries), total))
     print('{} botnets, {} normal, {} background'.format(botnets, normal,
           background))
@@ -136,6 +140,8 @@ def main(_):
         attack_files = irc_files
     elif FLAGS.attack_type == 'p2p':
         attack_files = p2p_files
+    elif FLAGS.attack_type == 'general':
+        attack_files = ['binetflows/{}'.format(binet) for binet in os.listdir('binetflows')]
 
     for binet in attack_files:
         aggregate_file(FLAGS.interval, binet, output_name)

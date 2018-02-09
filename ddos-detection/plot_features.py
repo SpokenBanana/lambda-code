@@ -15,11 +15,6 @@ def plot_confusion_matrix(cm, classes,
     """
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        print("Normalized confusion matrix")
-    else:
-        print('Confusion matrix, without normalization')
-
-    print(cm)
 
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
@@ -38,6 +33,7 @@ def plot_confusion_matrix(cm, classes,
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+    plt.show()
 
 
 def best_features(forest, feature, name):
@@ -55,10 +51,23 @@ def best_features(forest, feature, name):
 
 
 def plot_f1_per_interval(f1_scores, name, save=False):
-    intervals = [10, 20, 30, 60, 120, 180]
+    intervals = [1, 3, 5, 10, 20, 30, 60, 120, 180]
     plt.plot(intervals, f1_scores)
     plt.xticks(intervals)
     plt.xlabel('Interval (seconds)')
+    plt.ylabel('f1_score')
+    plt.title(name)
+    if save:
+        plt.save(name + '.png')
+    else:
+        plt.show()
+
+
+def plot_rf_estimators(f1_scores, name, save=False):
+    estimator_counts = [50, 100, 200, 300, 500, 700, 800, 900, 1000]
+    plt.plot(estimator_counts, f1_scores)
+    plt.xticks(estimator_counts)
+    plt.xlabel('Estimator counts')
     plt.ylabel('f1_score')
     plt.title(name)
     if save:
@@ -105,8 +114,8 @@ def plot_histogram_of(filename, feature, save=False):
     plt.title('{} on {}'.format(name, feature))
     if save:
         plt.savefig('figures/{}-{}.png'.format(name, feature))
-    else:
-        plt.show()
+    # else:
+    #     plt.show()
 
 
 if __name__ == '__main__':

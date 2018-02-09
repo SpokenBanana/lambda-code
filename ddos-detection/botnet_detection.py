@@ -120,14 +120,25 @@ def dl_test(model, features, label):
             f1_score(label, predicted))
 
 
+def dl_test_dict(model, features, label):
+    predicted = model.predict_classes(features, verbose=False)
+    metrics = ['accuracy', 'recall', 'precision', 'f1_score',
+               'confusion_matrix']
+    return dict(zip(metrics, (accuracy_score(label, predicted),
+                              recall_score(label, predicted),
+                              precision_score(label, predicted),
+                              f1_score(label, predicted),
+                              confusion_matrix(label, predicted))))
+
+
 def rf_train(features, label):
-    clf = RandomForestClassifier()
+    clf = RandomForestClassifier(n_estimators=700)
     clf.fit(features, label)
     return clf
 
 
 def rf_compare_estimator_counts(xtrain, xtest, ytrain, ytest):
-    estimator_counts = [50, 100, 200, 300, 500, 700, 800]
+    estimator_counts = [50, 100, 200, 300, 500, 700, 800, 900, 1000]
     scores = []
     for estimator in estimator_counts:
         clf = RandomForestClassifier(n_estimators=estimator)
@@ -151,9 +162,20 @@ def test(clf, features, label):
             f1_score(label, predicted))
 
 
-def summary_of_detection(filename, model):
-    xtrain, xtest, ytrain, ytest = get_specific_features_from(filename, best_features())
+def test_dict(clf, features, label):
+    predicted = clf.predict(features)
+    metrics = ['accuracy', 'recall', 'precision', 'f1_score',
+               'confusion_matrix']
+    return dict(zip(metrics, (accuracy_score(label, predicted),
+                              recall_score(label, predicted),
+                              precision_score(label, predicted),
+                              f1_score(label, predicted),
+                              confusion_matrix(label, predicted))))
 
+
+def summary_of_detection(filename, model):
+    xtrain, xtest, ytrain, ytest = get_specific_features_from(
+        filename, best_features())
     if model == 'rf':
         clf = rf_train(xtrain, ytrain)
     elif model == 'dt':
@@ -166,7 +188,7 @@ def summary_of_detection(filename, model):
 
 def get_plots_for_each_interval(attack_type):
     """clf is a Random Forest model to test this all on."""
-    intervals = [10, 20, 30, 60, 120, 180]
+    intervals = [1, 3, 5, 10, 20, 30, 60, 120, 180]
     scores = []
     for interval in intervals:
         filename = 'minute_aggregated/{}-{}s.featureset.csv'.format(
