@@ -12,7 +12,7 @@ from summarizer import Summarizer
 FLAGS = flags.FLAGS
 flags.DEFINE_string(
     'attack_type', None, 'Type of files to aggregate together.')
-flags.DEFINE_integer(
+flags.DEFINE_float(
     'interval', None, 'Interval in seconds to aggregate connections.')
 
 
@@ -35,6 +35,7 @@ def aggregate_file(interval, file_name, output_name, start=None):
 
     start = datetime.strptime(start, TIME_FORMAT)
     summaries = [Summarizer() for _ in range(10)]
+    summaries = {}
     total = 0
     botnets = 0
     background = 0
@@ -47,11 +48,11 @@ def aggregate_file(interval, file_name, output_name, start=None):
             args = line.strip().split(',')
             time = datetime.strptime(args[0], TIME_FORMAT)
             window = int((time - start).total_seconds() / interval)
-            if window < 0:
-                continue
-            if window >= len(summaries):
-                for i in range(window + 1):
-                    summaries.append(Summarizer())
+            # if window < 0:
+            #     continue
+            # if window >= len(summaries):
+            #     for i in range(window + 1):
+            #         summaries.append(Summarizer())
             item = dict(zip(headers, args))
             if 'Background' in item['label']:
                 background += 1
@@ -61,9 +62,11 @@ def aggregate_file(interval, file_name, output_name, start=None):
             elif 'Botnet' in item['label']:
                 botnets += 1
 
+            if window not in summaries:
+                summaries[window] = Summarizer()
             summaries[window].add(item)
 
-    summaries = [s for s in summaries if s.used]
+    summaries = [s for s in summaries.values() if s.used]
     total_connections = sum(s.data['n_conn'] for s in summaries)
     print('Average Connection per interval: {}'.format(
         total_connections / len(summaries)))
