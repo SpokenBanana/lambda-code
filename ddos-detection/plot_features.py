@@ -50,8 +50,7 @@ def best_features(forest, feature, name):
     return indices
 
 
-def plot_f1_per_interval(f1_scores, name, save=False):
-    intervals = [1, 3, 5, 10, 20, 30, 60, 120, 180]
+def plot_f1_per_interval(f1_scores, name, intervals, save=False):
     plt.plot(intervals, f1_scores)
     plt.xticks(intervals)
     plt.xlabel('Interval (seconds)')

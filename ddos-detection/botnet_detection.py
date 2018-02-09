@@ -186,9 +186,8 @@ def summary_of_detection(filename, model):
     return test(clf, xtest, ytest)
 
 
-def get_plots_for_each_interval(attack_type):
+def get_plots_for_each_interval(attack_type, intervals):
     """clf is a Random Forest model to test this all on."""
-    intervals = [1, 3, 5, 10, 20, 30, 60, 120, 180]
     scores = []
     for interval in intervals:
         filename = 'minute_aggregated/{}-{}s.featureset.csv'.format(
