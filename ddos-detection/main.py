@@ -12,8 +12,8 @@ from summarizer import Summarizer
 FLAGS = flags.FLAGS
 flags.DEFINE_string(
     'attack_type', None, 'Type of files to aggregate together.')
-flags.DEFINE_integer(
-    'interval', None, 'Interval in seconds to aggregate connections.')
+flags.DEFINE_float(
+        'interval', None, 'Interval in seconds to aggregate connections.')
 
 
 def get_base_name(filename):

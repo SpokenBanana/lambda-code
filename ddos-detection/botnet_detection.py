@@ -138,7 +138,7 @@ def rf_train(features, label):
 
 
 def rf_compare_estimator_counts(xtrain, xtest, ytrain, ytest):
-    estimator_counts = [50, 100, 200, 300, 500, 700, 800, 900, 1000]
+    estimator_counts = [50, 100, 200, 300, 500, 700, 800, 900, 1000, 1200]
     scores = []
     for estimator in estimator_counts:
         clf = RandomForestClassifier(n_estimators=estimator)

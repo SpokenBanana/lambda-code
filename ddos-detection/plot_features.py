@@ -64,7 +64,7 @@ def plot_f1_per_interval(f1_scores, name, save=False):
 
 
 def plot_rf_estimators(f1_scores, name, save=False):
-    estimator_counts = [50, 100, 200, 300, 500, 700, 800, 900, 1000]
+    estimator_counts = [50, 100, 200, 300, 500, 700, 800, 900, 1000, 1200]
     plt.plot(estimator_counts, f1_scores)
     plt.xticks(estimator_counts)
     plt.xlabel('Estimator counts')

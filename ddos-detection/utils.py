@@ -16,7 +16,7 @@ def best_features():
         'std_bytes',
         'src_to_dst',
         'entropy_packets',
-        'entropy_src_b_ip',
+        # 'entropy_src_b_ip',
         'entropy_bytes',
         'entropy_state',
         'entropy_srcport',
@@ -27,7 +27,7 @@ def best_features():
         'entropy_dstport',
         'entropy_dst_c_ip',
         'entropy_dst_a_ip',
-        'entropy_srcip',
+        # 'entropy_srcip',
         'entropy_time',
         'entropy_dstip',
     ]
