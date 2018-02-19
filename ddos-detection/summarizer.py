@@ -4,7 +4,9 @@ from scipy.stats import entropy as entropy_vector
 
 
 class Summarizer:
-    def __init__(self):
+    def __init__(self, bot=None, attack=None):
+        self.bot = bot
+        self.attack = attack
         self.features = [
             'n_conn',
             'avg_duration',
@@ -15,47 +17,50 @@ class Summarizer:
             'n_sports<1024',
             'n_dports>1024',
             'n_dports<1024',
-            'n_s_a_p_address',
-            'n_s_b_p_address',
-            'n_s_c_p_address',
             'n_d_a_p_address',
             'n_d_b_p_address',
             'n_d_c_p_address',
             'n_d_na_p_address',
-            'n_s_na_p_address',
-            'normal_flow_count',
-            'background_flow_count',
             # New features
-            'entropy_srcip',
-            'entropy_dstip',
-            'entropy_srcport',
-            'entropy_dstport',
-
             'std_packets',
             'std_bytes',
             'std_time',
             'std_srcbytes',
 
-            'entropy_time',
-            'entropy_state',
-            # TODO: Investigate how to add the new interesting feature.
             'src_to_dst',
-            # TODO: Add std and entropy of new features. Also as entropy time.
+
             'entropy_sports>1024',
             'entropy_sports<1024',
             'entropy_dports>1024',
+            'entropy_dports<1024',
+            'entropy_srcport',
+            'entropy_dstport',
+
+            'entropy_dstip',
+
+            # SRC related features, avoid them.
+            # 'normal_flow_count',
+            # 'background_flow_count',
+            'n_s_a_p_address',
+            'n_s_b_p_address',
+            'n_s_c_p_address',
+            'n_s_na_p_address',
+            'entropy_srcip',
             'entropy_src_a_ip',
             'entropy_src_b_ip',
             'entropy_src_c_ip',
+            'entropy_src_na_ip',
+
             'entropy_dst_a_ip',
             'entropy_dst_b_ip',
             'entropy_dst_c_ip',
             'entropy_dst_na_ip',
-            'entropy_src_na_ip',
+
             'entropy_bytes',
             'entropy_src_bytes',
-            'entropy_packets',
-            'entropy_dports<1024'
+            'entropy_time',
+            'entropy_state',
+            'entropy_packets'
         ]
 
         # Just an easier way to do this since its very repetitive.
@@ -208,6 +213,10 @@ class Summarizer:
             feature_list.append(str(self.data[key]))
 
         feature_list.append('Botnet' if self.is_attack else 'Normal')
+        if self.bot is not None or self.attack is not None:
+            feature_list.append(self.bot if self.is_attack else 'Normal')
+            feature_list.append(str(self.attack))
+
         return feature_list
 
     def calc_src_to_dst(self):
