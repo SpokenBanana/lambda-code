@@ -36,7 +36,8 @@ def plot_confusion_matrix(cm, classes,
     plt.show()
 
 
-def best_features(forest, feature, name):
+def best_features(forest, feature, name, feature_names):
+    plt.figure(figsize=(10, 5))
     importances = forest.feature_importances_
     std = np.std([tree.feature_importances_ for tree in forest.estimators_],
                  axis=0)
@@ -44,7 +45,8 @@ def best_features(forest, feature, name):
     plt.title('Importances for {}'.format(name))
     plt.bar(range(feature.shape[1]), importances[indices],
             color='r', yerr=std[indices], align='center')
-    plt.xticks(range(feature.shape[1]), indices)
+    features = [feature_names[i] for i in indices]
+    plt.xticks(range(feature.shape[1]), features, rotation=90)
     plt.xlim([-1, feature.shape[1]])
     plt.show()
     return indices
@@ -63,7 +65,7 @@ def plot_f1_per_interval(f1_scores, name, intervals, save=False):
 
 
 def plot_rf_estimators(f1_scores, name, save=False):
-    estimator_counts = [50, 100, 200, 300, 500, 700, 800, 900, 1000, 1200]
+    estimator_counts = [10, 50, 100, 200, 300, 500, 700]
     plt.plot(estimator_counts, f1_scores)
     plt.xticks(estimator_counts)
     plt.xlabel('Estimator counts')
@@ -75,13 +77,12 @@ def plot_rf_estimators(f1_scores, name, save=False):
         plt.show()
 
 
-def plot_roc_curve(fpr, tpr, auc, name, save=False):
-    plt.plot(fpr, tpr)
+def plot_roc_curve(fpr, tpr, auc, name, label, color, save=False):
+    plt.plot(fpr, tpr, label=label, color=color)
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
     plt.xlabel('False positive rate')
     plt.ylabel('True positive rate')
-    plt.title('ROC={:.2} for {}'.format(auc, name))
     if save:
         plt.save(name + '.png')
     else:

@@ -20,7 +20,7 @@ def get_base_name(filename):
     return filename.split('/')[-1].split('.')[0]
 
 
-def aggregate_file(interval, file_name, output_name, start=None):
+def aggregate_file(interval, file_name, output_name, bot=None, attack=None):
     """ Aggregate the data within the windows of time
 
         interval:       time in seconds to aggregate data
@@ -30,11 +30,9 @@ def aggregate_file(interval, file_name, output_name, start=None):
 
         returns: array of the aggregated data in each interval
     """
-    if start is None:
-        start = get_start_time_for(file_name)
+    start = get_start_time_for(file_name)
 
     start = datetime.strptime(start, TIME_FORMAT)
-    summaries = [Summarizer() for _ in range(10)]
     summaries = {}
     total = 0
     botnets = 0
@@ -48,11 +46,6 @@ def aggregate_file(interval, file_name, output_name, start=None):
             args = line.strip().split(',')
             time = datetime.strptime(args[0], TIME_FORMAT)
             window = int((time - start).total_seconds() / interval)
-            # if window < 0:
-            #     continue
-            # if window >= len(summaries):
-            #     for i in range(window + 1):
-            #         summaries.append(Summarizer())
             item = dict(zip(headers, args))
             if 'Background' in item['label']:
                 background += 1
@@ -63,7 +56,7 @@ def aggregate_file(interval, file_name, output_name, start=None):
                 botnets += 1
 
             if window not in summaries:
-                summaries[window] = Summarizer()
+                summaries[window] = Summarizer(bot, attack)
             summaries[window].add(item)
 
     summaries = [s for s in summaries.values() if s.used]
@@ -97,8 +90,11 @@ def write_featureset(filename, summaries):
 
 def main(_):
     binet_files = [
+            # UDP and ICMP
         'binetflows/capture20110815.binetflow',
+        # UDP
         'binetflows/capture20110818.binetflow',
+        # ICMP
         'binetflows/capture20110818-2.binetflow'
     ]
 
@@ -132,9 +128,12 @@ def main(_):
     output_name = 'minute_aggregated/{}-{}s.featureset.csv'.format(
         FLAGS.attack_type, FLAGS.interval)
     with open(output_name, 'w+') as out:
-        out.write(','.join(Summarizer().features) + ',label\n')
+        out.write(','.join(Summarizer().features) + ',label{}\n'.format(
+            '' if FLAGS.attack_type != 'general' else ',bot,attack_type'))
 
     attack_files = []
+    bots = [None for _ in range(13)]
+    attack = None
     if FLAGS.attack_type == 'ddos':
         attack_files = binet_files
     elif FLAGS.attack_type == 'spam':
@@ -144,10 +143,42 @@ def main(_):
     elif FLAGS.attack_type == 'p2p':
         attack_files = p2p_files
     elif FLAGS.attack_type == 'general':
-        attack_files = ['binetflows/{}'.format(binet) for binet in os.listdir('binetflows')]
+        bots_dict = {
+            'Neris': [1, 2, 9],
+            'Rbot': [3, 4, 10, 11],
+            'Virut': [5, 13],
+            'Menti': [6],
+            'Sogou': [7],
+            'Murlo': [8],
+            'NSIS.ay': [12]
+        }
+        # TODO: Make this simplier.
+        for key, value in bots_dict.items():
+            for index in value:
+                bots[index-1] = key
 
-    for binet in attack_files:
-        aggregate_file(FLAGS.interval, binet, output_name)
+        attack_files = [
+            'binetflows/capture20110810.binetflow',
+            'binetflows/capture20110811.binetflow',
+            'binetflows/capture20110812.binetflow',
+            'binetflows/capture20110815.binetflow',
+            'binetflows/capture20110815-2.binetflow',
+            'binetflows/capture20110816.binetflow',
+            'binetflows/capture20110816-2.binetflow',
+            'binetflows/capture20110816-3.binetflow',
+            'binetflows/capture20110817.binetflow',
+            'binetflows/capture20110818.binetflow',
+            'binetflows/capture20110818-2.binetflow',
+            'binetflows/capture20110819.binetflow',
+            'binetflows/capture20110815-3.binetflow'
+        ]
+    elif FLAGS.attack_type == 'all':
+        attack_files = set(binet_files)
+        attack_files |= set(irc_files)
+        attack_files |= set(spam_files)
+
+    for i, binet in enumerate(attack_files):
+        aggregate_file(FLAGS.interval, binet, output_name, bots[i], attack)
 
     # Avoid error in keras
     import gc
