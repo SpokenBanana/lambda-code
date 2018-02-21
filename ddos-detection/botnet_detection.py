@@ -17,9 +17,11 @@ from keras import backend as K
 from keras.utils import plot_model
 from sklearn import tree
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.multiclass import OneVsRestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import recall_score, precision_score, accuracy_score, \
-    f1_score, precision_recall_curve, roc_curve, auc, confusion_matrix
+    f1_score, precision_recall_curve, roc_curve, auc, confusion_matrix, \
+    average_precision_score
 import os
 from absl import app
 from absl import flags
@@ -29,7 +31,11 @@ from summarizer import Summarizer
 
 
 FLAGS = flags.FLAGS
+
+# TODO: Merge these into a single flag.
 flags.DEFINE_bool('use_bots', False, 'Whether or not to use bots as the label.')
+flags.DEFINE_bool('use_attacks', False, 'Whether or not to use attack as the label')
+
 flags.DEFINE_bool('use_background',
         False, 'Use the file that has background information.')
 flags.DEFINE_string('attack_type', None, 'Type of attack to train on.')
@@ -75,7 +81,8 @@ def get_feature_labels(filename):
     return xtrain, xtest, ytrain, ytest
 
 
-def get_specific_features_from(filename, feature_names=None, use_bots=False):
+def get_specific_features_from(filename, feature_names=None, use_bots=False,
+                               use_attack=False):
     features = []
     labels = []
     with open(filename, 'r+') as f:
@@ -88,13 +95,21 @@ def get_specific_features_from(filename, feature_names=None, use_bots=False):
                         [float(data[feature]) for feature in feature_names])
             else:
                 features.append([float(x) for x in info[:-1]])
-            if not use_bots:
-                labels.append(1 if info[-1] == 'Botnet' else 0)
-            else:
+            if use_bots:
                 # For bots
                 bots = ['Normal', 'Neris', 'Rbot', 'Virut', 'Menti', 'Sogou', 'Murlo',
                         'NSIS.ay']
                 labels.append(bots.index(info[-2]))
+            if use_attack:
+                attacks = ['Normal', 'ddos', 'spam', 'irc']
+                entry = [0, 0, 0, 0]
+                if info[-3] == 'Botnet':
+                    for attack in info[-1].split('+'):
+                        entry[attacks.index(attack)] = 1
+                labels.append(entry)
+            else:
+                labels.append(1 if info[-1] == 'Botnet' else 0)
+
     xtrain, xtest, ytrain, ytest = train_test_split(
         features, labels, test_size=.3, random_state=42)
     return xtrain, xtest, ytrain, ytest
@@ -178,8 +193,12 @@ def dl_test_dict(model, features, label):
                               confusion_matrix(label, predicted))))
 
 
-def rf_train(features, label):
-    clf = RandomForestClassifier(n_estimators=50, n_jobs=3)  # n_estimators=700)
+def rf_train(features, label, use_attack=False):
+    if use_attack:
+        clf = OneVsRestClassifier(
+                RandomForestClassifier(n_estimators=50), n_jobs=3)
+    else:
+        clf = RandomForestClassifier(n_estimators=50, n_jobs=3)  # n_estimators=700)
     clf.fit(features, label)
     return clf
 
@@ -203,9 +222,27 @@ def dt_train(features, label):
     return clf
 
 
-def test(clf, features, label, use_bots=False):
-    predicted = clf.predict(features)
-    print(use_bots)
+def test(clf, features, label, use_bots=False, use_attack=False):
+    if use_attack:
+        predicted = clf.decision_function(features)
+        recall = {}
+        precision = {}
+        accuracy = {}
+        f1_score = {'micro': 0}
+        for i in range(4):
+            precision[i], recall[i] = precision_recall_curve(
+                    label[:, i], predicted[:, i])
+            accuracy[i] = average_precision_score(
+                    label[:, i], predicted[:, i])
+
+            # Micro stands for the overall score for all classes.
+            precision['micro'], recall['micro'] = precision_recall_curve(
+                    label.ravel(), predicted.ravel())
+            accuracy['micro'] = average_precision_score(
+                    label, predictedm, average='micro')
+            return (accuracy, precision, recall, f1_score)
+    else:
+        predicted = clf.predict(features)
     return (accuracy_score(label, predicted),
             precision_score(label, predicted, average='binary' if not use_bots else 'weighted'),
             recall_score(label, predicted, average='binary' if not use_bots else 'weighted'),
@@ -223,11 +260,11 @@ def test_dict(clf, features, label):
                               confusion_matrix(label, predicted))))
 
 
-def summary_of_detection(filename, model, use_bots=False):
+def summary_of_detection(filename, model, use_bots=False, use_attack=False):
     xtrain, xtest, ytrain, ytest = get_specific_features_from(
-        filename, Summarizer().features, use_bots)  # best_features())
+        filename, Summarizer().features, use_bots, use_attack)
     if model == 'rf':
-        clf = rf_train(xtrain, ytrain)
+        clf = rf_train(xtrain, ytrain, use_attack)
     elif model == 'dt':
         clf = dt_train(xtrain, ytrain)
     elif model == 'dl':
@@ -236,6 +273,9 @@ def summary_of_detection(filename, model, use_bots=False):
             ytest = to_tf_labels(ytest)
         clf = dl_train(xtrain, ytrain, use_bots)
         return dl_test(clf, xtrain, ytrain, use_bots)
+    if use_attack:
+        return [x['micro'] for x in test(
+            clf, xtest, ytest, use_bots, use_attack)]
     return test(clf, xtest, ytest, use_bots)
 
 
@@ -270,7 +310,8 @@ def main(_):
             FLAGS.interval)
 
     print("Accuracy: {:.4f}, Precision: {:.4f}, Recall: {:.4f}, f1_score: {:.4f}".format(
-        *summary_of_detection(f, FLAGS.model_type, FLAGS.use_bots)))
+        *summary_of_detection(
+            f, FLAGS.model_type, FLAGS.use_bots, FLAGS.use_attacks)))
 
 
 if __name__ == '__main__':

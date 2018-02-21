@@ -92,6 +92,7 @@ def write_featureset(filename, summaries):
 
 
 def main(_):
+
     binet_files = [
             # UDP and ICMP
         'binetflows/capture20110815.binetflow',
@@ -138,7 +139,7 @@ def main(_):
 
     attack_files = []
     bots = [None for _ in range(13)]
-    attack = None
+    attack = [None for _ in range(13)]
     if FLAGS.attack_type == 'ddos':
         attack_files = binet_files
     elif FLAGS.attack_type == 'spam':
@@ -181,9 +182,22 @@ def main(_):
         attack_files = set(binet_files)
         attack_files |= set(irc_files)
         attack_files |= set(spam_files)
+        for i, attack_file in enumerate(attack_files):
+            attack_type = ''
+            if attack_file in binet_files:
+                attack_type = 'ddos'
+            if attack_file in irc_files:
+                if attack_type != '':
+                    attack_type += '+'
+                attack_type += 'irc'
+            if attack_file in spam_files:
+                if attack_type != '':
+                    attack_type += '+'
+                attack_type += 'spam'
+            attack[i] = attack_type
 
     for i, binet in enumerate(attack_files):
-        aggregate_file(FLAGS.interval, binet, output_name, bots[i], attack)
+        aggregate_file(FLAGS.interval, binet, output_name, bots[i], attack[i])
 
     # Avoid error in keras
     import gc
