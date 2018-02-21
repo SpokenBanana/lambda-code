@@ -17,6 +17,7 @@ from keras import backend as K
 from keras.utils import plot_model
 from sklearn import tree
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import recall_score, precision_score, accuracy_score, \
@@ -102,17 +103,18 @@ def get_specific_features_from(filename, feature_names=None, use_bots=False,
                 labels.append(bots.index(info[-2]))
             if use_attack:
                 attacks = ['Normal', 'ddos', 'spam', 'irc']
-                entry = [0, 0, 0, 0]
+                entry = [1, 0, 0, 0]
                 if info[-3] == 'Botnet':
                     for attack in info[-1].split('+'):
                         entry[attacks.index(attack)] = 1
+                    entry[0] = 0
                 labels.append(entry)
             else:
                 labels.append(1 if info[-1] == 'Botnet' else 0)
 
     xtrain, xtest, ytrain, ytest = train_test_split(
         features, labels, test_size=.3, random_state=42)
-    return xtrain, xtest, ytrain, ytest
+    return np.array(xtrain), np.array(xtest), np.array(ytrain), np.array(ytest)
 
 
 def to_tf_labels(labels):
@@ -197,9 +199,11 @@ def rf_train(features, label, use_attack=False):
     if use_attack:
         clf = OneVsRestClassifier(
                 RandomForestClassifier(n_estimators=50), n_jobs=3)
+        bn = MultiLabelBinarizer()
+        clf.fit(features, bn.fit_transform(label))
     else:
         clf = RandomForestClassifier(n_estimators=50, n_jobs=3)  # n_estimators=700)
-    clf.fit(features, label)
+        clf.fit(features, label)
     return clf
 
 
