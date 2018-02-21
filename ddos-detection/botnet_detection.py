@@ -30,9 +30,12 @@ from summarizer import Summarizer
 
 FLAGS = flags.FLAGS
 flags.DEFINE_bool('use_bots', False, 'Whether or not to use bots as the label.')
+flags.DEFINE_bool('use_background',
+        False, 'Use the file that has background information.')
 flags.DEFINE_string('attack_type', None, 'Type of attack to train on.')
 flags.DEFINE_string('model_type', None, 'Type of model to train with.')
 flags.DEFINE_float('interval', None, 'Interval of the file to train on.')
+
 
 
 def get_files(directory):
@@ -261,8 +264,10 @@ def train_and_test_on(feature, label):
 
 
 def main(_):
-    base_name = 'minute_aggregated/{}-{}s.featureset.csv'
-    f = base_name.format(FLAGS.attack_type, FLAGS.interval)
+    base_name = 'minute_aggregated/{}{}-{}s.featureset.csv'
+    f = base_name.format(FLAGS.attack_type,
+            '' if not FLAGS.use_background else '_background',
+            FLAGS.interval)
 
     print("Accuracy: {:.4f}, Precision: {:.4f}, Recall: {:.4f}, f1_score: {:.4f}".format(
         *summary_of_detection(f, FLAGS.model_type, FLAGS.use_bots)))

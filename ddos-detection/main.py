@@ -14,6 +14,8 @@ flags.DEFINE_string(
     'attack_type', None, 'Type of files to aggregate together.')
 flags.DEFINE_float(
     'interval', None, 'Interval in seconds to aggregate connections.')
+flags.DEFINE_bool('use_background',
+        False, 'To include background connections to the aggregation.')
 
 
 def get_base_name(filename):
@@ -49,7 +51,8 @@ def aggregate_file(interval, file_name, output_name, bot=None, attack=None):
             item = dict(zip(headers, args))
             if 'Background' in item['label']:
                 background += 1
-                continue
+                if not FLAGS.use_background:
+                    continue
             elif 'Normal' in item['label']:
                 normal += 1
             elif 'Botnet' in item['label']:
@@ -125,8 +128,10 @@ def main(_):
     p2p_files = ['binetflows/capture20110819.binetflow']
 
     # Set up the file that holds all this information.
-    output_name = 'minute_aggregated/{}-{}s.featureset.csv'.format(
-        FLAGS.attack_type, FLAGS.interval)
+    output_name = 'minute_aggregated/{}{}-{}s.featureset.csv'.format(
+        FLAGS.attack_type,
+        '' if not FLAGS.use_background else '_background',
+        FLAGS.interval)
     with open(output_name, 'w+') as out:
         out.write(','.join(Summarizer().features) + ',label{}\n'.format(
             '' if FLAGS.attack_type != 'general' else ',bot,attack_type'))
