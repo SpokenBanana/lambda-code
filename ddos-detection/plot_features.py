@@ -5,6 +5,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
+def convert_to_greek(line):
+    line.replace('std', '$\sigma$')
+    line.replace('entropy', '$\mathcal{S}$')
+    line.replace('n_', '$\mathcal{N}$_')
+    line.replace('avg', '$\mathcal{\bar{W}}$')
+
+
 def plot_confusion_matrix(cm, classes,
                           normalize=False,
                           title='Confusion matrix',
@@ -45,7 +52,7 @@ def best_features(forest, feature, name, feature_names):
     plt.title('Importances for {}'.format(name))
     plt.bar(range(feature.shape[1]), importances[indices],
             color='r', yerr=std[indices], align='center')
-    features = [feature_names[i] for i in indices]
+    features = [convert_to_greek(feature_names[i]) for i in indices]
     plt.xticks(range(feature.shape[1]), features, rotation=90)
     plt.xlim([-1, feature.shape[1]])
     plt.show()
@@ -77,6 +84,23 @@ def plot_rf_estimators(f1_scores, name, save=False):
         plt.show()
 
 
+def plot_multilabel_roc(precision, recall, name, save=False):
+    plt.plot(recall['micro'],
+             precision['micro'],
+             color='gold',
+             lw=2,
+             label='Micro-Average')
+    colors = ['black', 'red', 'blue', 'green']
+    classes = ['Normal', 'DDOS', 'SPAM', 'IRC']
+    for i, color in zip(range(4), colors):
+        # TODO: Actually tell which class.
+        plt.plot(recall[i], precision[i], color=color, label='Class ' + classes[i])
+    plt.ylabel('precision')
+    plt.xlabel('recall')
+    plt.legend()
+    plt.show()
+
+
 def plot_roc_curve(fpr, tpr, auc, name, label, color, save=False):
     plt.plot(fpr, tpr, label=label, color=color)
     plt.xlim([0.0, 1.0])
@@ -86,7 +110,7 @@ def plot_roc_curve(fpr, tpr, auc, name, label, color, save=False):
     if save:
         plt.save(name + '.png')
     else:
-        plt.show()
+        pass
 
 
 def get_feature_from(filename, feature_name):
@@ -105,6 +129,7 @@ def get_feature_from(filename, feature_name):
 
 
 def plot_histogram_of(filename, feature, save=False):
+    feature = convert_to_greek(feature)
     name = filename.split('/')[1].split('.')[0]
     normal, botnets = get_feature_from(filename, feature)
     n_normal, bins_normal, patches_normal = plt.hist(

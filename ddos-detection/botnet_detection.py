@@ -11,13 +11,14 @@ Use for ROC curves:
     # Plot fpr vs tpr
 """
 from tensorflow.python.client import device_lib
+import random
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from keras import backend as K
 from keras.utils import plot_model
 from sklearn import tree
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.preprocessing import MultiLabelBinarizer, label_binarize
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import recall_score, precision_score, accuracy_score, \
@@ -29,6 +30,9 @@ from absl import flags
 from utils import best_features
 import numpy as np
 from summarizer import Summarizer
+
+# TODO: Remove it.
+from plot_features import plot_multilabel_roc
 
 
 FLAGS = flags.FLAGS
@@ -68,6 +72,11 @@ def get_roc_metrics(clf, features, labels, sklearn=True):
     return fpr, tpr, roc_auc
 
 
+# BOOM single line
+def sample_feature_label(feature, label, n):
+    return zip(*random.sample(zip(feature, label), n))
+
+
 def get_feature_labels(filename):
     features = []
     labels = []
@@ -83,7 +92,7 @@ def get_feature_labels(filename):
 
 
 def get_specific_features_from(filename, feature_names=None, use_bots=False,
-                               use_attack=False):
+                               use_attack=False, has_bots_and_attack=False):
     features = []
     labels = []
     with open(filename, 'r+') as f:
@@ -109,7 +118,9 @@ def get_specific_features_from(filename, feature_names=None, use_bots=False,
                         entry[attacks.index(attack)] = 1
                     entry[0] = 0
                 labels.append(entry)
-            else:
+            if has_bots_and_attack:
+                labels.append(1 if info[-3] == 'Botnet' else 0)
+            elif not use_bots and not use_attack:
                 labels.append(1 if info[-1] == 'Botnet' else 0)
 
     xtrain, xtest, ytrain, ytest = train_test_split(
@@ -170,7 +181,7 @@ def dl_train(features, label, use_bots=False):
         label = np.reshape(label, (-1, 1))
 
     model.fit(features, label, epochs=10, batch_size=32, verbose=False)
-    plot_model(model)
+    # plot_model(model)
     return model
 
 
@@ -199,8 +210,8 @@ def rf_train(features, label, use_attack=False):
     if use_attack:
         clf = OneVsRestClassifier(
                 RandomForestClassifier(n_estimators=50), n_jobs=3)
-        bn = MultiLabelBinarizer()
-        clf.fit(features, bn.fit_transform(label))
+        # bn = MultiLabelBinarizer()
+        clf.fit(features, label)
     else:
         clf = RandomForestClassifier(n_estimators=50, n_jobs=3)  # n_estimators=700)
         clf.fit(features, label)
@@ -228,23 +239,31 @@ def dt_train(features, label):
 
 def test(clf, features, label, use_bots=False, use_attack=False):
     if use_attack:
-        predicted = clf.decision_function(features)
+        predicted = clf.predict_proba(features)
         recall = {}
         precision = {}
         accuracy = {}
-        f1_score = {'micro': 0}
+        f1_scores = {'micro': 0}
+        attacks = ['Normal', 'ddos', 'spam', 'irc']
         for i in range(4):
-            precision[i], recall[i] = precision_recall_curve(
-                    label[:, i], predicted[:, i])
+            precision[i], recall[i], _ = precision_recall_curve(
+                label[:, i],
+                predicted[:, i])
             accuracy[i] = average_precision_score(
-                    label[:, i], predicted[:, i])
+                label[:, i], predicted[:, i])
+            print('{}: {}, {}, {}'.format(attacks[i], accuracy[i], np.average(precision[i]), np.average(recall[i])))
 
-            # Micro stands for the overall score for all classes.
-            precision['micro'], recall['micro'] = precision_recall_curve(
-                    label.ravel(), predicted.ravel())
-            accuracy['micro'] = average_precision_score(
-                    label, predictedm, average='micro')
-            return (accuracy, precision, recall, f1_score)
+        # Micro stands for the overall score for all classes
+        precision['micro'], recall['micro'], _ = precision_recall_curve(
+            label.ravel(), predicted.ravel())
+
+        # precision['micro'] = ', '.join([str(x) for x in precision['micro']])
+        # recall['micro'] = ', '.join([str(x) for x in recall['micro']])
+        accuracy['micro'] = average_precision_score(
+            label, predicted, average='micro')
+
+        plot_multilabel_roc(precision, recall, 'ROC of attacks')
+        return (accuracy, precision, recall, f1_scores)
     else:
         predicted = clf.predict(features)
     return (accuracy_score(label, predicted),
@@ -313,9 +332,11 @@ def main(_):
             '' if not FLAGS.use_background else '_background',
             FLAGS.interval)
 
+    result = summary_of_detection(
+            f, FLAGS.model_type, FLAGS.use_bots, FLAGS.use_attacks)
+    print(result)
     print("Accuracy: {:.4f}, Precision: {:.4f}, Recall: {:.4f}, f1_score: {:.4f}".format(
-        *summary_of_detection(
-            f, FLAGS.model_type, FLAGS.use_bots, FLAGS.use_attacks)))
+        *result))
 
 
 if __name__ == '__main__':
