@@ -74,7 +74,7 @@ def get_roc_metrics(clf, features, labels, sklearn=True):
 
 # BOOM single line
 def sample_feature_label(feature, label, n):
-    return zip(*random.sample(zip(feature, label), n))
+    return zip(*random.sample(list(zip(feature, label)), n))
 
 
 def get_feature_labels(filename):
@@ -92,7 +92,7 @@ def get_feature_labels(filename):
 
 
 def get_specific_features_from(filename, feature_names=None, use_bots=False,
-                               use_attack=False, has_bots_and_attack=False):
+                               use_attack=False, has_bots_and_attack=False, sample=False):
     features = []
     labels = []
     with open(filename, 'r+') as f:
@@ -122,6 +122,12 @@ def get_specific_features_from(filename, feature_names=None, use_bots=False,
                 labels.append(1 if info[-3] == 'Botnet' else 0)
             elif not use_bots and not use_attack:
                 labels.append(1 if info[-1] == 'Botnet' else 0)
+    if sample:
+        botnet_feat, botnet_label = zip(*[x for x in zip(features, labels) if x[1] == 1])
+        normal_feat, normal_label = zip(*[x for x in zip(features, labels) if x[1] != 1])
+        normal_feat, normal_label = sample_feature_label(normal_feat, normal_label, len(botnet_feat))
+        features = normal_feat + botnet_feat
+        labels = normal_label + botnet_label
 
     xtrain, xtest, ytrain, ytest = train_test_split(
         features, labels, test_size=.3, random_state=42)
@@ -283,9 +289,9 @@ def test_dict(clf, features, label):
                               confusion_matrix(label, predicted))))
 
 
-def summary_of_detection(filename, model, use_bots=False, use_attack=False):
+def summary_of_detection(filename, model, use_bots=False, use_attack=False, sample=False):
     xtrain, xtest, ytrain, ytest = get_specific_features_from(
-        filename, Summarizer().features, use_bots, use_attack)
+        filename, Summarizer().features, use_bots, use_attack, sample)
     if model == 'rf':
         clf = rf_train(xtrain, ytrain, use_attack)
     elif model == 'dt':
