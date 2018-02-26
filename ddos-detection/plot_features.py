@@ -1,4 +1,6 @@
 import matplotlib
+matplotlib.rcParams['text.usetex'] = True
+matplotlib.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath,amssymb,amsfonts}']
 import itertools
 # matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -6,10 +8,12 @@ import numpy as np
 
 
 def convert_to_greek(line):
-    line.replace('std', '$\sigma$')
-    line.replace('entropy', '$\mathcal{S}$')
-    line.replace('n_', '$\mathcal{N}$_')
-    line.replace('avg', '$\mathcal{\bar{W}}$')
+    line = line.replace('_', '\_')
+    line = line.replace('std', '$\sigma$')
+    line = line.replace('entropy', '$\mathcal{S}$')
+    line = line.replace('n\_', '$\mathcal{N}$\_')
+    line = line.replace('avg', '$\mathcal{\\bar{W}}$')
+    return line
 
 
 def plot_confusion_matrix(cm, classes,
