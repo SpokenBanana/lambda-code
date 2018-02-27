@@ -245,7 +245,8 @@ def dt_train(features, label):
 
 def test(clf, features, label, use_bots=False, use_attack=False):
     if use_attack:
-        predicted = clf.predict_proba(features)
+        predicted = clf.predict(features)
+        predicted_proba = clf.predict_proba(features)
         recall = {}
         precision = {}
         accuracy = {}
@@ -254,14 +255,23 @@ def test(clf, features, label, use_bots=False, use_attack=False):
         for i in range(4):
             precision[i], recall[i], _ = precision_recall_curve(
                 label[:, i],
-                predicted[:, i])
+                predicted_proba[:, i])
+            f1_scores[i] = f1_score(label[:, i], predicted[:, i])
+            
             accuracy[i] = average_precision_score(
-                label[:, i], predicted[:, i])
-            print('{}: {}, {}, {}'.format(attacks[i], accuracy[i], np.average(precision[i]), np.average(recall[i])))
+                label[:, i], predicted_proba[:, i])
+            print('{}: {}, {}, {}, {}'.format(
+                attacks[i],
+                accuracy[i],
+                np.average(precision[i]),
+                np.average(recall[i]),
+                f1_scores[i]
+            ))
 
         # Micro stands for the overall score for all classes
         precision['micro'], recall['micro'], _ = precision_recall_curve(
-            label.ravel(), predicted.ravel())
+            label.ravel(), predicted_proba.ravel())
+        f1_scores['micro'] = f1_score(label.ravel(), predicted.ravel())
 
         # precision['micro'] = ', '.join([str(x) for x in precision['micro']])
         # recall['micro'] = ', '.join([str(x) for x in recall['micro']])
