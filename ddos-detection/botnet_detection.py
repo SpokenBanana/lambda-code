@@ -35,20 +35,6 @@ from summarizer import Summarizer
 from plot_features import plot_multilabel_roc
 
 
-FLAGS = flags.FLAGS
-
-# TODO: Merge these into a single flag.
-flags.DEFINE_bool('use_bots', False, 'Whether or not to use bots as the label.')
-flags.DEFINE_bool('use_attacks', False, 'Whether or not to use attack as the label')
-
-flags.DEFINE_bool('use_background',
-        False, 'Use the file that has background information.')
-flags.DEFINE_string('attack_type', None, 'Type of attack to train on.')
-flags.DEFINE_string('model_type', None, 'Type of model to train with.')
-flags.DEFINE_float('interval', None, 'Interval of the file to train on.')
-
-
-
 def get_files(directory):
     files = os.listdir(directory)
     return ['{}/{}'.format(directory, name) for name in files]
@@ -192,7 +178,7 @@ def dl_train(features, label, use_bots=False):
 
 
 def dl_test(model, features, label, use_bots=False):
-    if FLAGS.use_bots:
+    if use_bots:
         label = to_normal(label)
     predicted = model.predict_classes(features, verbose=False)
     return (accuracy_score(label, predicted),
@@ -219,7 +205,10 @@ def rf_train(features, label, use_attack=False):
         # bn = MultiLabelBinarizer()
         clf.fit(features, label)
     else:
-        clf = RandomForestClassifier(n_estimators=50, n_jobs=3)  # n_estimators=700)
+        clf = RandomForestClassifier(
+                # class_weight='balanced',
+                class_weight={0: 1, 1: 100},
+                n_estimators=50, n_jobs=3)  # n_estimators=700)
         clf.fit(features, label)
     return clf
 
@@ -229,6 +218,7 @@ def rf_compare_estimator_counts(xtrain, xtest, ytrain, ytest):
     scores = []
     for estimator in estimator_counts:
         clf = RandomForestClassifier(
+            class_weight={ 0: 1, 1: 6 },
             n_estimators=estimator,
             n_jobs=3)
         clf.fit(xtrain, ytrain)
@@ -257,7 +247,7 @@ def test(clf, features, label, use_bots=False, use_attack=False):
                 label[:, i],
                 predicted_proba[:, i])
             f1_scores[i] = f1_score(label[:, i], predicted[:, i])
-            
+
             accuracy[i] = average_precision_score(
                 label[:, i], predicted_proba[:, i])
             print('{}: {}, {}, {}, {}'.format(
@@ -307,7 +297,7 @@ def summary_of_detection(filename, model, use_bots=False, use_attack=False, samp
     elif model == 'dt':
         clf = dt_train(xtrain, ytrain)
     elif model == 'dl':
-        if FLAGS.use_bots:
+        if use_bots:
             ytrain = to_tf_labels(ytrain)
             ytest = to_tf_labels(ytest)
         clf = dl_train(xtrain, ytrain, use_bots)
@@ -341,19 +331,3 @@ def train_and_test_on(feature, label):
     model = rf_train(xtrain, ytrain)
     return test(model, xtest, ytest)
 
-
-def main(_):
-    base_name = 'minute_aggregated/{}{}-{}s.featureset.csv'
-    f = base_name.format(FLAGS.attack_type,
-            '' if not FLAGS.use_background else '_background',
-            FLAGS.interval)
-
-    result = summary_of_detection(
-            f, FLAGS.model_type, FLAGS.use_bots, FLAGS.use_attacks)
-    print(result)
-    print("Accuracy: {:.4f}, Precision: {:.4f}, Recall: {:.4f}, f1_score: {:.4f}".format(
-        *result))
-
-
-if __name__ == '__main__':
-    app.run(main)

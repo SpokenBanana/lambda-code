@@ -1,6 +1,4 @@
 import matplotlib
-matplotlib.rcParams['text.usetex'] = True
-matplotlib.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath,amssymb,amsfonts}']
 import itertools
 # matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -48,6 +46,8 @@ def plot_confusion_matrix(cm, classes,
 
 
 def best_features(forest, feature, name, feature_names):
+    matplotlib.rcParams['text.usetex'] = True
+    matplotlib.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath,amssymb,amsfonts}']
     plt.figure(figsize=(10, 5))
     importances = forest.feature_importances_
     std = np.std([tree.feature_importances_ for tree in forest.estimators_],
@@ -89,6 +89,7 @@ def plot_rf_estimators(f1_scores, name, save=False):
 
 
 def plot_multilabel_roc(precision, recall, name, save=False):
+    plt.figure(figsize=(10, 5))
     plt.plot(recall['micro'],
              precision['micro'],
              color='gold',
@@ -133,30 +134,34 @@ def get_feature_from(filename, feature_name):
 
 
 def plot_histogram_of(filename, feature, save=False):
+    matplotlib.rcParams['text.usetex'] = True
+    matplotlib.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath,amssymb,amsfonts}']
     name = filename.split('/')[1].split('.')[0]
     normal, botnets = get_feature_from(filename, feature)
     n_normal, bins_normal, patches_normal = plt.hist(
         normal, 50, facecolor='blue', alpha=.5)
     n_botnet, bins_botnet, patches_botnet = plt.hist(
         botnets, 50, facecolor='red', alpha=.5)
-    plt.title('{} on {}'.format(name, convert_to_greek(feature)))
+    plt.title('{} on {}'.format(convert_to_greek(name), convert_to_greek(feature)))
     if save:
         plt.savefig('figures/{}-{}.png'.format(name, feature))
     # else:
     #     plt.show()
-    
+
 
 def plot_scatter_of(filename, feature, save=False):
+    matplotlib.rcParams['text.usetex'] = True
+    matplotlib.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath,amssymb,amsfonts}']
     name = filename.split('/')[1].split('.')[0]
     normal, botnets = get_feature_from(filename, feature)
     plt.scatter(range(len(normal)), normal, color='blue', s=5)
     plt.scatter(range(len(botnets)), botnets, color='red', s=5)
-    plt.title('{} on {}'.format(name, convert_to_greek(feature)))
+    plt.title('{} on {}'.format(convert_to_greek(name), convert_to_greek(feature)))
     if save:
         plt.savefig('figures/{}-{}.png'.format(name, feature))
     # else:
     #     plt.show()
-       
+
 
 
 if __name__ == '__main__':
