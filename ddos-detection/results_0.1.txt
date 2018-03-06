@@ -1,0 +1,21 @@
+RF: Class weights.
+ALL: Accuracy: 0.8718, Precision: 0.8588, Recall: 0.8895, f1_score: 0.8739
+SPAM: Accuracy: 0.9076, Precision: 0.8946, Recall: 0.9250, f1_score: 0.9095
+IRC: Accuracy: 0.8768, Precision: 0.8648, Recall: 0.8943, f1_score: 0.8793
+DDOS: Accuracy: 0.9020, Precision: 0.9390, Recall: 0.8612, f1_score: 0.8984
+
+DL
+ALL: Accuracy: 0.5002, Precision: 0.5002, Recall: 1.0000, f1_score: 0.6668
+SPAM: Accuracy: 0.5189, Precision: 0.9316, Recall: 0.0391, f1_score: 0.0750
+IRC: Accuracy: 0.6624, Precision: 0.7600, Recall: 0.4731, f1_score: 0.5832
+DDOS: Accuracy: 0.6815, Precision: 0.9033, Recall: 0.4044, f1_score: 0.5587
+
+RF: No class weights.
+ALL: Accuracy: 0.8767, Precision: 0.8504, Recall: 0.9140, f1_score: 0.8811
+SPAM: Accuracy: 0.9094, Precision: 0.8846, Recall: 0.9425, f1_score: 0.9126
+IRC: Accuracy: 0.8808, Precision: 0.8538, Recall: 0.9200, f1_score: 0.8857
+DDOS: Accuracy: 0.9106, Precision: 0.9413, Recall: 0.8771, f1_score: 0.9081
+
+
+
+
