@@ -97,17 +97,19 @@ def plot_multilabel_roc(precision, recall, name, save=False):
              label='Micro-Average')
     colors = ['black', 'red', 'blue', 'green']
     classes = ['Normal', 'DDOS', 'SPAM', 'IRC']
+    styles = ['dashed', 'dotted', 'solid']
     for i, color in zip(range(4), colors):
         # TODO: Actually tell which class.
-        plt.plot(recall[i], precision[i], color=color, label='Class ' + classes[i])
+        plt.plot(recall[i], precision[i], color=color, label='Class ' + classes[i],
+                linestyle=styles[i])
     plt.ylabel('precision')
     plt.xlabel('recall')
     plt.legend()
     plt.show()
 
 
-def plot_roc_curve(fpr, tpr, auc, name, label, color, save=False):
-    plt.plot(fpr, tpr, label=label, color=color)
+def plot_roc_curve(fpr, tpr, auc, name, label, color, linestyle='solid', save=False):
+    plt.plot(fpr, tpr, label=label, color=color, linestyle=linestyle)
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
     plt.xlabel('False positive rate')
