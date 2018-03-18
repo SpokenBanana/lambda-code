@@ -104,7 +104,7 @@ def get_specific_features_from(filename, feature_names=None, use_bots=False,
                         entry[attacks.index(attack)] = 1
                     entry[0] = 0
                 labels.append(entry)
-            if has_bots_and_attack:
+            if has_bots_and_attack or 'all' in filename:
                 labels.append(1 if info[-3] == 'Botnet' else 0)
             elif not use_bots and not use_attack:
                 labels.append(1 if info[-1] == 'Botnet' else 0)
@@ -151,12 +151,16 @@ def dl_train(features, label, use_bots=False):
     # Best model
     # model.add(Dense(64, activation='relu'))
     # model.add(Dense(64, activation='relu'))
-    # model.add(Dropout(0.3))
+    # model.add(Dropout(0.5))
     # model.add(Dense(128, activation='relu'))
     # model.add(Dense(128, activation='relu'))
-    # model.add(Dropout(0.3))
+    # model.add(Dropout(0.5))
     # model.add(Dense(246, activation='relu'))
-    # model.add(Dropout(0.3))
+    # model.add(Dense(246, activation='relu'))
+    # model.add(Dropout(0.5))
+    # model.add(Dense(512, activation='relu'))
+    # model.add(Dense(512, activation='relu'))
+    # model.add(Dropout(0.5))
 
     # TODO: Add labels for bot detection.
     if use_bots:
@@ -197,6 +201,18 @@ def dl_test_dict(model, features, label):
                               f1_score(label, predicted),
                               confusion_matrix(label, predicted))))
 
+def dl_test_proba(model, features, label, normal_thresh=.5):
+    probas = model.predict_proba(features, verbose=False)
+    predicted = [(0 if prob[0] >= normal_thresh else 1) for prob in probas]
+    metrics = ['accuracy', 'recall', 'precision', 'f1_score',
+               'confusion_matrix']
+    return dict(zip(metrics, (accuracy_score(label, predicted),
+                              precision_score(label, predicted),
+                              recall_score(label, predicted),
+                              f1_score(label, predicted),
+                              confusion_matrix(label, predicted))))
+
+
 
 def rf_train(features, label, use_attack=False):
     if use_attack:
@@ -207,7 +223,6 @@ def rf_train(features, label, use_attack=False):
     else:
         clf = RandomForestClassifier(
                 # class_weight='balanced',
-                class_weight={0: 1, 1: 100},
                 n_estimators=50, n_jobs=3)  # n_estimators=700)
         clf.fit(features, label)
     return clf
@@ -231,6 +246,19 @@ def dt_train(features, label):
     clf = tree.DecisionTreeClassifier()
     clf.fit(features, label)
     return clf
+
+
+def test_proba(clf, features, label, normal_thresh=.5):
+    probas = clf.predict_proba(features)
+    predicted = [(0 if prob[0] >= normal_thresh else 1) for prob in probas]
+    metrics = ['accuracy', 'recall', 'precision', 'f1_score',
+               'confusion_matrix']
+    return dict(zip(metrics, (accuracy_score(label, predicted),
+                              precision_score(label, predicted),
+                              recall_score(label, predicted),
+                              f1_score(label, predicted),
+                              confusion_matrix(label, predicted))))
+   
 
 
 def test(clf, features, label, use_bots=False, use_attack=False):
@@ -291,7 +319,7 @@ def test_dict(clf, features, label):
 
 def summary_of_detection(filename, model, use_bots=False, use_attack=False, sample=False):
     xtrain, xtest, ytrain, ytest = get_specific_features_from(
-        filename, Summarizer().features, use_bots, use_attack, sample)
+        filename, Summarizer().features, use_bots, use_attack, sample=sample)
     if model == 'rf':
         clf = rf_train(xtrain, ytrain, use_attack)
     elif model == 'dt':
