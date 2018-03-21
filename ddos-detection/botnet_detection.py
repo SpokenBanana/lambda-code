@@ -182,12 +182,16 @@ def dl_train(features, label, use_bots=False):
     # Best model
     # model.add(Dense(64, activation='relu'))
     # model.add(Dense(64, activation='relu'))
-    # model.add(Dropout(0.3))
+    # model.add(Dropout(0.5))
     # model.add(Dense(128, activation='relu'))
     # model.add(Dense(128, activation='relu'))
-    # model.add(Dropout(0.3))
+    # model.add(Dropout(0.5))
     # model.add(Dense(246, activation='relu'))
-    # model.add(Dropout(0.3))
+    # model.add(Dense(246, activation='relu'))
+    # model.add(Dropout(0.5))
+    # model.add(Dense(512, activation='relu'))
+    # model.add(Dense(512, activation='relu'))
+    # model.add(Dropout(0.5))
 
     # TODO: Add labels for bot detection.
     if use_bots:
@@ -228,6 +232,18 @@ def dl_test_dict(model, features, label):
                               f1_score(label, predicted),
                               confusion_matrix(label, predicted))))
 
+def dl_test_proba(model, features, label, normal_thresh=.5):
+    probas = model.predict_proba(features, verbose=False)
+    predicted = [(0 if prob[0] >= normal_thresh else 1) for prob in probas]
+    metrics = ['accuracy', 'recall', 'precision', 'f1_score',
+               'confusion_matrix']
+    return dict(zip(metrics, (accuracy_score(label, predicted),
+                              precision_score(label, predicted),
+                              recall_score(label, predicted),
+                              f1_score(label, predicted),
+                              confusion_matrix(label, predicted))))
+
+
 
 def rf_train(features, label, use_attack=False, use_ahead=False):
     if use_attack or use_ahead:
@@ -264,7 +280,20 @@ def dt_train(features, label):
     return clf
 
 
-def test(clf, features, label, use_bots=False, use_attack=False, use_ahead=False):
+def test_proba(clf, features, label, normal_thresh=.5):
+    probas = clf.predict_proba(features)
+    predicted = [(0 if prob[0] >= normal_thresh else 1) for prob in probas]
+    metrics = ['accuracy', 'recall', 'precision', 'f1_score',
+               'confusion_matrix']
+    return dict(zip(metrics, (accuracy_score(label, predicted),
+                              precision_score(label, predicted),
+                              recall_score(label, predicted),
+                              f1_score(label, predicted),
+                              confusion_matrix(label, predicted))))
+
+
+
+def test(clf, features, label, use_bots=False, use_attack=False):
     if use_attack:
         predicted = clf.predict(features)
         predicted_proba = clf.predict_proba(features)
@@ -326,15 +355,9 @@ def test_dict(clf, features, label):
                               confusion_matrix(label, predicted))))
 
 
-def summary_of_detection(filename, model, use_bots=False, use_attack=False,
-        sample=False, use_ahead=False):
-    print(filename, model, use_ahead)
-    if use_ahead:
-        xtrain, xtest, ytrain, ytest = get_ahead_feature_labels(filename,
-                Summarizer().features)
-    else:
-        xtrain, xtest, ytrain, ytest = get_specific_features_from(
-            filename, Summarizer().features, use_bots, use_attack, sample)
+def summary_of_detection(filename, model, use_bots=False, use_attack=False, sample=False):
+    xtrain, xtest, ytrain, ytest = get_specific_features_from(
+        filename, Summarizer().features, use_bots, use_attack, sample=sample)
     if model == 'rf':
         clf = rf_train(xtrain, ytrain, use_attack, use_ahead)
     elif model == 'dt':
