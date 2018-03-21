@@ -77,6 +77,37 @@ def get_feature_labels(filename):
     return xtrain, xtest, ytrain, ytest
 
 
+def get_ahead_feature_labels(filename, feature_names):
+    features = []
+    labels = []
+    with open(filename, 'r+') as f:
+        header = f.readline().strip().split(',')
+        prev_info = f.readline().strip().split(',')
+        prev_info = dict(zip(header, prev_info))
+        for line in f:
+            info = line.strip().split(',')
+            info = dict(zip(header, info))
+            features.append([float(prev_info[name]) for name in feature_names])
+            current = 1 if info['label'] == 'Botnet' else 0
+            prev = 1 if prev_info['label'] == 'Botnet' else 0
+            prev_info = info
+            if current == prev and current == 0:
+                # labels.append([1, 0, 0, 0])
+                labels.append(0)
+            elif current == prev and current == 1:
+                # labels.append([0, 1, 0, 0])
+                labels.append(1)
+            elif current != prev and current == 0:
+                # labels.append([0, 0, 1, 0])
+                labels.append(2)
+            elif current != prev and current == 1:
+                # labels.append([0, 0, 0, 1])
+                labels.append(3)
+    xtrain, xtest, ytrain, ytest = train_test_split(
+        features, labels, test_size=.3, random_state=42)
+    return xtrain, xtest, ytrain, ytest
+
+
 def get_specific_features_from(filename, feature_names=None, use_bots=False,
                                use_attack=False, has_bots_and_attack=False, sample=False):
     features = []
@@ -214,15 +245,16 @@ def dl_test_proba(model, features, label, normal_thresh=.5):
 
 
 
-def rf_train(features, label, use_attack=False):
-    if use_attack:
+def rf_train(features, label, use_attack=False, use_ahead=False):
+    if use_attack or use_ahead:
         clf = OneVsRestClassifier(
                 RandomForestClassifier(n_estimators=50), n_jobs=3)
-        # bn = MultiLabelBinarizer()
+        bn = MultiLabelBinarizer()
         clf.fit(features, label)
     else:
         clf = RandomForestClassifier(
                 # class_weight='balanced',
+                # class_weight={0: 1, 1: 100},
                 n_estimators=50, n_jobs=3)  # n_estimators=700)
         clf.fit(features, label)
     return clf
@@ -233,7 +265,7 @@ def rf_compare_estimator_counts(xtrain, xtest, ytrain, ytest):
     scores = []
     for estimator in estimator_counts:
         clf = RandomForestClassifier(
-            class_weight={ 0: 1, 1: 6 },
+            # class_weight={ 0: 1, 1: 6 },
             n_estimators=estimator,
             n_jobs=3)
         clf.fit(xtrain, ytrain)
@@ -258,7 +290,7 @@ def test_proba(clf, features, label, normal_thresh=.5):
                               recall_score(label, predicted),
                               f1_score(label, predicted),
                               confusion_matrix(label, predicted))))
-   
+
 
 
 def test(clf, features, label, use_bots=False, use_attack=False):
@@ -298,6 +330,12 @@ def test(clf, features, label, use_bots=False, use_attack=False):
 
         plot_multilabel_roc(precision, recall, 'ROC of attacks')
         return (accuracy, precision, recall, f1_scores)
+    elif use_ahead:
+        predicted = clf.predict(features)
+        return (accuracy_score(label, predicted),
+                precision_score(label, predicted, average='weighted'),
+                recall_score(label, predicted, average='weighted'),
+                f1_score(label, predicted, average='weighted'))
     else:
         predicted = clf.predict(features)
     return (accuracy_score(label, predicted),
@@ -321,7 +359,7 @@ def summary_of_detection(filename, model, use_bots=False, use_attack=False, samp
     xtrain, xtest, ytrain, ytest = get_specific_features_from(
         filename, Summarizer().features, use_bots, use_attack, sample=sample)
     if model == 'rf':
-        clf = rf_train(xtrain, ytrain, use_attack)
+        clf = rf_train(xtrain, ytrain, use_attack, use_ahead)
     elif model == 'dt':
         clf = dt_train(xtrain, ytrain)
     elif model == 'dl':
@@ -333,7 +371,7 @@ def summary_of_detection(filename, model, use_bots=False, use_attack=False, samp
     if use_attack:
         return [x['micro'] for x in test(
             clf, xtest, ytest, use_bots, use_attack)]
-    return test(clf, xtest, ytest, use_bots)
+    return test(clf, xtest, ytest, use_bots, use_ahead=use_ahead)
 
 
 def get_plots_for_each_interval(attack_type, intervals):
