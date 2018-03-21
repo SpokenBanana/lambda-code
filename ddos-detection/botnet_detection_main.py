@@ -8,6 +8,7 @@ FLAGS = flags.FLAGS
 # TODO: Merge these into a single flag.
 flags.DEFINE_bool('use_bots', False, 'Whether or not to use bots as the label.')
 flags.DEFINE_bool('use_attacks', False, 'Whether or not to use attack as the label')
+flags.DEFINE_bool('sample', False, 'Whether or not to sample from Normal labels.')
 
 flags.DEFINE_bool('use_background',
         False, 'Use the file that has background information.')
@@ -23,7 +24,7 @@ def main(_):
             FLAGS.interval)
 
     result = summary_of_detection(
-            f, FLAGS.model_type, FLAGS.use_bots, FLAGS.use_attacks)
+            f, FLAGS.model_type, FLAGS.use_bots, FLAGS.use_attacks, sample=FLAGS.sample)
     print(result)
     print("Accuracy: {:.4f}, Precision: {:.4f}, Recall: {:.4f}, f1_score: {:.4f}".format(
         *result))
