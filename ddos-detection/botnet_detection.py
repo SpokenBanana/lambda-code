@@ -293,7 +293,7 @@ def test_proba(clf, features, label, normal_thresh=.5):
 
 
 
-def test(clf, features, label, use_bots=False, use_attack=False):
+def test(clf, features, label, use_bots=False, use_attack=False, use_ahead=False):
     if use_attack:
         predicted = clf.predict(features)
         predicted_proba = clf.predict_proba(features)
@@ -344,14 +344,14 @@ def test(clf, features, label, use_bots=False, use_attack=False):
             f1_score(label, predicted, average='binary' if not use_bots else 'weighted'))
 
 
-def test_dict(clf, features, label):
+def test_dict(clf, features, label, use_ahead=False):
     predicted = clf.predict(features)
     metrics = ['accuracy', 'recall', 'precision', 'f1_score',
                'confusion_matrix']
     return dict(zip(metrics, (accuracy_score(label, predicted),
-                              precision_score(label, predicted),
-                              recall_score(label, predicted),
-                              f1_score(label, predicted),
+                              precision_score(label, predicted, average='binary' if not use_ahead else 'weighted'),
+                              recall_score(label, predicted, average='binary' if not use_ahead else 'weighted'),
+                              f1_score(label, predicted, average='binary' if not use_ahead else 'weighted'),
                               confusion_matrix(label, predicted))))
 
 
