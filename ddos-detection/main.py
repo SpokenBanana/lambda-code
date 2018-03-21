@@ -16,13 +16,16 @@ flags.DEFINE_float(
     'interval', None, 'Interval in seconds to aggregate connections.')
 flags.DEFINE_bool('use_background',
         False, 'To include background connections to the aggregation.')
+flags.DEFINE_bool('single',
+        False, 'Whether this is aggregating a single file or not.')
 
 
 def get_base_name(filename):
     return filename.split('/')[-1].split('.')[0]
 
 
-def aggregate_file(interval, file_name, output_name, bot=None, attack=None):
+def aggregate_file(interval, file_name, output_name, bot=None, attack=None,
+        single=False):
     """ Aggregate the data within the windows of time
 
         interval:       time in seconds to aggregate data
@@ -62,20 +65,22 @@ def aggregate_file(interval, file_name, output_name, bot=None, attack=None):
                 summaries[window] = Summarizer(bot, attack)
             summaries[window].add(item)
 
-    summaries = [s for s in summaries.values() if s.used]
+    summaries = [v for s, v in sorted(summaries.items()) if v.used]
     total_connections = sum(s.data['n_conn'] for s in summaries)
     print('Average Connection per interval: {}'.format(
         total_connections / len(summaries)))
     print('Got {}/{}'.format(len(summaries), total))
     print('{} botnets, {} normal, {} background'.format(botnets, normal,
           background))
-    append_to_ddos_featureset(summaries, output_name)
 
     # Use this if you want a featureset for each file.
 
-    # basename = get_base_name(file_name)
-    # filename = 'minute_aggregated/{}.aggregated.csv'.format(basename)
-    # write_featureset(filename, summaries)
+    if single:
+        basename = get_base_name(file_name)
+        filename = 'minute_aggregated/{}_ahead.aggregated.csv'.format(basename)
+        write_featureset(filename, summaries)
+    else:
+        append_to_ddos_featureset(summaries, output_name)
 
 
 def append_to_ddos_featureset(summaries, output_name):
@@ -86,7 +91,7 @@ def append_to_ddos_featureset(summaries, output_name):
 
 def write_featureset(filename, summaries):
     with open(filename, 'w+') as out:
-        out.write(','.join(get_feature_order()) + ',label\n')
+        out.write(','.join(Summarizer().features) + ',label\n')
         for summary in summaries:
             out.write(','.join(summary.get_feature_list()) + '\n')
 
@@ -195,9 +200,12 @@ def main(_):
                     attack_type += '+'
                 attack_type += 'spam'
             attack[i] = attack_type
+    elif FLAGS.single:
+        attack_files = ['binetflows/capture2011081{}.binetflow'.format(FLAGS.attack_type)]
 
     for i, binet in enumerate(attack_files):
-        aggregate_file(FLAGS.interval, binet, output_name, bots[i], attack[i])
+        aggregate_file(FLAGS.interval, binet, output_name, bots[i], attack[i],
+                FLAGS.single)
 
     # Avoid error in keras
     import gc
