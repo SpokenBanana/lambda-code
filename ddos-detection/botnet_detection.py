@@ -10,7 +10,6 @@ Use for ROC curves:
 
     # Plot fpr vs tpr
 """
-from tensorflow.python.client import device_lib
 import random
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
@@ -20,6 +19,7 @@ from sklearn import tree
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import MultiLabelBinarizer, label_binarize
 from sklearn.multiclass import OneVsRestClassifier
+from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import recall_score, precision_score, accuracy_score, \
     f1_score, precision_recall_curve, roc_curve, auc, confusion_matrix, \
@@ -35,6 +35,15 @@ from summarizer import Summarizer
 from plot_features import plot_multilabel_roc
 
 
+def perform_search(params, feature, labels):
+    clf = GridSearchCV(RandomForestClassifier(), params)
+
+    # Train it.
+    clf.fit(feature, labels)
+
+    print(clf.best_params_)
+
+
 def get_files(directory):
     files = os.listdir(directory)
     return ['{}/{}'.format(directory, name) for name in files]
@@ -44,10 +53,10 @@ def get_roc_metrics(clf, features, labels, sklearn=True):
     proba = clf.predict_proba(features)
     if sklearn:
         precision, recall, pr_threshold = precision_recall_curve(labels,
-                                                             proba[:, 1])
+                                                                 proba[:, 1])
     else:
         precision, recall, pr_threshold = precision_recall_curve(labels,
-                                                             proba)
+                                                                 proba)
     if sklearn:
         fpr, tpr, _ = roc_curve(labels, proba[:, 1])  # proba[:, 1] for sklearn
     else:
@@ -77,20 +86,41 @@ def get_feature_labels(filename):
     return xtrain, xtest, ytrain, ytest
 
 
-def get_ahead_feature_labels(filename, feature_names):
+def get_ahead_feature_labels(filename, feature_names, steps_ahead=1):
     features = []
     labels = []
+
+    queue = []
+
     with open(filename, 'r+') as f:
         header = f.readline().strip().split(',')
-        prev_info = f.readline().strip().split(',')
-        prev_info = dict(zip(header, prev_info))
+
+        for i in range(steps_ahead):
+            prev_info = f.readline().strip().split(',')
+            prev_info = dict(zip(header, prev_info))
+            queue.append(prev_info)
+
         for line in f:
             info = line.strip().split(',')
+            if len(info) == 1:
+                # This is a separator, meaning we are at the start of a new
+                # file and so the previous information is useless.
+                queue = []
+                for i in range(steps_ahead):
+                    prev_info = f.readline().strip().split(',')
+                    prev_info = dict(zip(header, prev_info))
+                    queue.append(prev_info)
+                continue
+
             info = dict(zip(header, info))
+            prev_info = queue.pop(0)
+
             features.append([float(prev_info[name]) for name in feature_names])
+
             current = 1 if info['label'] == 'Botnet' else 0
             prev = 1 if prev_info['label'] == 'Botnet' else 0
-            prev_info = info
+            queue.append(info)
+
             if current == prev and current == 0:
                 # labels.append([1, 0, 0, 0])
                 labels.append(0)
@@ -109,7 +139,8 @@ def get_ahead_feature_labels(filename, feature_names):
 
 
 def get_specific_features_from(filename, feature_names=None, use_bots=False,
-                               use_attack=False, has_bots_and_attack=False, sample=False):
+                               use_attack=False, has_bots_and_attack=False,
+                               sample=False):
     features = []
     labels = []
     with open(filename, 'r+') as f:
@@ -119,13 +150,13 @@ def get_specific_features_from(filename, feature_names=None, use_bots=False,
             data = dict(zip(header, info))
             if feature_names:
                 features.append(
-                        [float(data[feature]) for feature in feature_names])
+                    [float(data[feature]) for feature in feature_names])
             else:
                 features.append([float(x) for x in info[:-1]])
             if use_bots:
                 # For bots
-                bots = ['Normal', 'Neris', 'Rbot', 'Virut', 'Menti', 'Sogou', 'Murlo',
-                        'NSIS.ay']
+                bots = ['Normal', 'Neris', 'Rbot', 'Virut', 'Menti', 'Sogou',
+                        'Murlo', 'NSIS.ay']
                 labels.append(bots.index(info[-2]))
             if use_attack:
                 attacks = ['Normal', 'ddos', 'spam', 'irc']
@@ -140,9 +171,12 @@ def get_specific_features_from(filename, feature_names=None, use_bots=False,
             elif not use_bots and not use_attack:
                 labels.append(1 if info[-1] == 'Botnet' else 0)
     if sample:
-        botnet_feat, botnet_label = zip(*[x for x in zip(features, labels) if x[1] == 1])
-        normal_feat, normal_label = zip(*[x for x in zip(features, labels) if x[1] != 1])
-        normal_feat, normal_label = sample_feature_label(normal_feat, normal_label, len(botnet_feat))
+        botnet_feat, botnet_label = zip(*[
+            x for x in zip(features, labels) if x[1] == 1])
+        normal_feat, normal_label = zip(*[
+            x for x in zip(features, labels) if x[1] != 1])
+        normal_feat, normal_label = sample_feature_label(
+            normal_feat, normal_label, len(botnet_feat))
         features = normal_feat + botnet_feat
         labels = normal_label + botnet_label
 
@@ -169,6 +203,7 @@ def to_normal(labels):
 
 def dl_train(features, label, use_bots=False):
     model = Sequential()
+    # TODO: Try random initialization.
     model.add(
         Dense(64,
               input_dim=len(features[0]),
@@ -179,6 +214,7 @@ def dl_train(features, label, use_bots=False):
     model.add(Dense(64, activation='relu'))
     model.add(Dropout(0.5))
 
+    # TODO: Try tanh, dropout to .3, go to 1024
     # Best model
     # model.add(Dense(64, activation='relu'))
     # model.add(Dense(64, activation='relu'))
@@ -217,9 +253,15 @@ def dl_test(model, features, label, use_bots=False):
         label = to_normal(label)
     predicted = model.predict_classes(features, verbose=False)
     return (accuracy_score(label, predicted),
-            precision_score(label, predicted, average='binary' if not use_bots else 'weighted'),
-            recall_score(label, predicted, average='binary' if not use_bots else 'weighted'),
-            f1_score(label, predicted, average='binary' if not use_bots else 'weighted'))
+            precision_score(
+                label, predicted,
+                average='binary' if not use_bots else 'weighted'),
+            recall_score(
+                label, predicted,
+                average='binary' if not use_bots else 'weighted'),
+            f1_score(
+                label, predicted,
+                average='binary' if not use_bots else 'weighted'))
 
 
 def dl_test_dict(model, features, label):
@@ -231,6 +273,7 @@ def dl_test_dict(model, features, label):
                               recall_score(label, predicted),
                               f1_score(label, predicted),
                               confusion_matrix(label, predicted))))
+
 
 def dl_test_proba(model, features, label, normal_thresh=.5):
     probas = model.predict_proba(features, verbose=False)
@@ -244,18 +287,18 @@ def dl_test_proba(model, features, label, normal_thresh=.5):
                               confusion_matrix(label, predicted))))
 
 
-
-def rf_train(features, label, use_attack=False, use_ahead=False):
+def rf_train(features, label, use_attack=False, use_ahead=False, trees=50):
+    # TODO: Use more trees for background.
     if use_attack or use_ahead:
         clf = OneVsRestClassifier(
-                RandomForestClassifier(n_estimators=50), n_jobs=3)
-        bn = MultiLabelBinarizer()
+            RandomForestClassifier(n_estimators=trees), n_jobs=3)
+        # bn = MultiLabelBinarizer()
         clf.fit(features, label)
     else:
         clf = RandomForestClassifier(
-                # class_weight='balanced',
-                # class_weight={0: 1, 1: 100},
-                n_estimators=50, n_jobs=3)  # n_estimators=700)
+            # class_weight='balanced',
+            # class_weight={0: 1, 1: 100},
+            n_estimators=trees, n_jobs=3)  # n_estimators=700)
         clf.fit(features, label)
     return clf
 
@@ -292,8 +335,8 @@ def test_proba(clf, features, label, normal_thresh=.5):
                               confusion_matrix(label, predicted))))
 
 
-
-def test(clf, features, label, use_bots=False, use_attack=False, use_ahead=False):
+def test(clf, features, label, use_bots=False, use_attack=False,
+         use_ahead=False):
     if use_attack:
         predicted = clf.predict(features)
         predicted_proba = clf.predict_proba(features)
@@ -339,27 +382,47 @@ def test(clf, features, label, use_bots=False, use_attack=False, use_ahead=False
     else:
         predicted = clf.predict(features)
     return (accuracy_score(label, predicted),
-            precision_score(label, predicted, average='binary' if not use_bots else 'weighted'),
-            recall_score(label, predicted, average='binary' if not use_bots else 'weighted'),
-            f1_score(label, predicted, average='binary' if not use_bots else 'weighted'))
+            precision_score(
+                label, predicted,
+                average='binary' if not use_bots else 'weighted'),
+            recall_score(
+                label, predicted,
+                average='binary' if not use_bots else 'weighted'),
+            f1_score(
+                label, predicted,
+                average='binary' if not use_bots else 'weighted'))
 
 
 def test_dict(clf, features, label, use_ahead=False):
     predicted = clf.predict(features)
     metrics = ['accuracy', 'recall', 'precision', 'f1_score',
                'confusion_matrix']
-    return dict(zip(metrics, (accuracy_score(label, predicted),
-                              precision_score(label, predicted, average='binary' if not use_ahead else 'weighted'),
-                              recall_score(label, predicted, average='binary' if not use_ahead else 'weighted'),
-                              f1_score(label, predicted, average='binary' if not use_ahead else 'weighted'),
-                              confusion_matrix(label, predicted))))
+    return dict(zip(
+        metrics, (accuracy_score(label, predicted),
+                  precision_score(
+                      label, predicted,
+                      average='binary' if not use_ahead else 'weighted'),
+                  recall_score(
+                      label, predicted,
+                      average='binary' if not use_ahead else 'weighted'),
+                  f1_score(
+                      label, predicted,
+                      average='binary' if not use_ahead else 'weighted'),
+                  confusion_matrix(label, predicted))))
 
 
-def summary_of_detection(filename, model, use_bots=False, use_attack=False, sample=False):
-    xtrain, xtest, ytrain, ytest = get_specific_features_from(
-        filename, Summarizer().features, use_bots, use_attack, sample=sample)
+def summary_of_detection(filename, model, use_bots=False, use_attack=False,
+                         sample=False, use_ahead=True, steps_ahead=1, trees=50):
+    """Genral call to train and test any model under any features."""
+    if use_ahead:
+        xtrain, xtest, ytrain, ytest = get_ahead_feature_labels(
+            filename, Summarizer().features, steps_ahead)
+    else:
+        xtrain, xtest, ytrain, ytest = get_specific_features_from(
+            filename, Summarizer().features, use_bots, use_attack,
+            sample=sample)
     if model == 'rf':
-        clf = rf_train(xtrain, ytrain, use_attack, use_ahead)
+        clf = rf_train(xtrain, ytrain, use_attack, use_ahead, trees=trees)
     elif model == 'dt':
         clf = dt_train(xtrain, ytrain)
     elif model == 'dl':
@@ -396,4 +459,3 @@ def train_and_test_on(feature, label):
         feature, label, test_size=.3, random_state=42)
     model = rf_train(xtrain, ytrain)
     return test(model, xtest, ytest)
-

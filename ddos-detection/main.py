@@ -18,6 +18,8 @@ flags.DEFINE_bool('use_background',
         False, 'To include background connections to the aggregation.')
 flags.DEFINE_bool('single',
         False, 'Whether this is aggregating a single file or not.')
+flags.DEFINE_bool('use_separator',
+        False, 'Whether this is aggregating a single file or not.')
 
 
 def get_base_name(filename):
@@ -25,7 +27,7 @@ def get_base_name(filename):
 
 
 def aggregate_file(interval, file_name, output_name, bot=None, attack=None,
-        single=False):
+        single=False, use_separator=False):
     """ Aggregate the data within the windows of time
 
         interval:       time in seconds to aggregate data
@@ -81,6 +83,9 @@ def aggregate_file(interval, file_name, output_name, bot=None, attack=None,
         write_featureset(filename, summaries)
     else:
         append_to_ddos_featureset(summaries, output_name)
+    if use_separator:
+        with open(output_name, 'a') as out:
+            out.write('NEW FILE')
 
 
 def append_to_ddos_featureset(summaries, output_name):
@@ -205,7 +210,7 @@ def main(_):
 
     for i, binet in enumerate(attack_files):
         aggregate_file(FLAGS.interval, binet, output_name, bots[i], attack[i],
-                FLAGS.single)
+                FLAGS.single, use_separator=FLAGS.use_separator)
 
     # Avoid error in keras
     import gc
