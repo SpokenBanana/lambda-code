@@ -79,7 +79,8 @@ def aggregate_file(interval, file_name, output_name, bot=None, attack=None,
 
     if single:
         basename = get_base_name(file_name)
-        filename = 'minute_aggregated/{}_ahead.aggregated.csv'.format(basename)
+        filename = 'minute_aggregated/{}-{}_ahead.aggregated.csv'.format(
+            basename, interval)
         write_featureset(filename, summaries)
     else:
         append_to_ddos_featureset(summaries, output_name)
