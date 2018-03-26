@@ -207,27 +207,37 @@ def dl_train(features, label, use_bots=False):
     model.add(
         Dense(64,
               input_dim=len(features[0]),
-              kernel_initializer='uniform',
+              kernel_initializer='random_uniform',
               activation='relu'))
     # Simple model
-    model.add(Dropout(0.5))
-    model.add(Dense(64, activation='relu'))
-    model.add(Dropout(0.5))
+    # model.add(Dropout(0.5))
+    # model.add(Dense(64, activation='relu'))
+    # model.add(Dropout(0.5))
 
     # TODO: Try tanh, dropout to .3, go to 1024
     # Best model
-    # model.add(Dense(64, activation='relu'))
-    # model.add(Dense(64, activation='relu'))
-    # model.add(Dropout(0.5))
-    # model.add(Dense(128, activation='relu'))
-    # model.add(Dense(128, activation='relu'))
-    # model.add(Dropout(0.5))
-    # model.add(Dense(246, activation='relu'))
-    # model.add(Dense(246, activation='relu'))
-    # model.add(Dropout(0.5))
-    # model.add(Dense(512, activation='relu'))
-    # model.add(Dense(512, activation='relu'))
-    # model.add(Dropout(0.5))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dropout(0.3))
+    model.add(Dense(128, activation='relu'))
+    model.add(Dense(128, activation='relu'))
+    model.add(Dropout(0.3))
+    model.add(Dense(246, activation='relu'))
+    model.add(Dense(246, activation='relu'))
+    model.add(Dropout(0.3))
+    model.add(Dense(512, activation='relu'))
+    model.add(Dense(512, activation='relu'))
+    model.add(Dropout(0.3))
+    model.add(Dense(1024, activation='relu'))
+    model.add(Dense(1024, activation='relu'))
+    model.add(Dropout(0.3))
+    model.add(Dense(512, activation='relu'))
+    model.add(Dense(512, activation='relu'))
+    model.add(Dropout(0.3))
+    model.add(Dense(246, activation='relu'))
+    model.add(Dense(246, activation='relu'))
+    model.add(Dropout(0.3))
+
 
     # TODO: Add labels for bot detection.
     if use_bots:
