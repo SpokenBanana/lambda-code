@@ -86,7 +86,7 @@ def aggregate_file(interval, file_name, output_name, bot=None, attack=None,
         append_to_ddos_featureset(summaries, output_name)
     if use_separator:
         with open(output_name, 'a') as out:
-            out.write('NEW FILE')
+            out.write('NEW FILE\n')
 
 
 def append_to_ddos_featureset(summaries, output_name):
@@ -140,9 +140,10 @@ def main(_):
     p2p_files = ['binetflows/capture20110819.binetflow']
 
     # Set up the file that holds all this information.
-    output_name = 'minute_aggregated/{}{}-{}s.featureset.csv'.format(
+    output_name = 'minute_aggregated/{}{}{}-{}s.featureset.csv'.format(
         FLAGS.attack_type,
         '' if not FLAGS.use_background else '_background',
+        '' if not FLAGS.use_separator else '_ahead',
         FLAGS.interval)
     with open(output_name, 'w+') as out:
         out.write(','.join(Summarizer().features) + ',label{}\n'.format(

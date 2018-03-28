@@ -102,7 +102,7 @@ def get_ahead_feature_labels(filename, feature_names, steps_ahead=1):
 
         for line in f:
             info = line.strip().split(',')
-            if len(info) == 1:
+            if len(info) < 2:
                 # This is a separator, meaning we are at the start of a new
                 # file and so the previous information is useless.
                 queue = []
@@ -224,20 +224,13 @@ def dl_train(features, label, use_bots=False):
     model.add(Dropout(0.3))
     model.add(Dense(246, activation='relu'))
     model.add(Dense(246, activation='relu'))
-    model.add(Dropout(0.3))
-    model.add(Dense(512, activation='relu'))
-    model.add(Dense(512, activation='relu'))
-    model.add(Dropout(0.3))
-    model.add(Dense(1024, activation='relu'))
-    model.add(Dense(1024, activation='relu'))
-    model.add(Dropout(0.3))
-    model.add(Dense(512, activation='relu'))
-    model.add(Dense(512, activation='relu'))
-    model.add(Dropout(0.3))
-    model.add(Dense(246, activation='relu'))
-    model.add(Dense(246, activation='relu'))
-    model.add(Dropout(0.3))
-
+    model.add(Dropout(0.5))
+    model.add(Dense(128, activation='relu'))
+    model.add(Dense(128, activation='relu'))
+    model.add(Dropout(0.4))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dropout(0.4))
 
     # TODO: Add labels for bot detection.
     if use_bots:
@@ -297,7 +290,7 @@ def dl_test_proba(model, features, label, normal_thresh=.5):
                               confusion_matrix(label, predicted))))
 
 
-def rf_train(features, label, use_attack=False, use_ahead=False, trees=50):
+def rf_train(features, label, use_attack=False, use_ahead=False, trees=50, max_features=None, class_weight='balanced'):
     # TODO: Use more trees for background.
     if use_attack or use_ahead:
         clf = OneVsRestClassifier(
@@ -306,7 +299,8 @@ def rf_train(features, label, use_attack=False, use_ahead=False, trees=50):
         clf.fit(features, label)
     else:
         clf = RandomForestClassifier(
-            # class_weight='balanced',
+            class_weight=class_weight,
+            max_features=max_features,
             # class_weight={0: 1, 1: 100},
             n_estimators=trees, n_jobs=3)  # n_estimators=700)
         clf.fit(features, label)

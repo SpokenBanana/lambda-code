@@ -99,12 +99,12 @@ class Summarizer:
 
         self._ips = []
         self._packets = []
-        self._dstports = collections.Counter()
-        self._srcports = collections.Counter()
         self._bytes = []
         self._time = []
         self._time_counter = collections.Counter()
         self._states = collections.Counter()
+        self._dstports = collections.Counter()
+        self._srcports = collections.Counter()
 
         self.src_to_dst = {}
 
@@ -185,10 +185,10 @@ class Summarizer:
 
         if 'Botnet' in item['label']:
             self.is_attack = 1
-        elif 'Normal' in item['label']:
-            self.data['normal_flow_count'] += 1
-        elif 'Background' in item['label']:
-            self.data['background_flow_count'] += 1
+        # elif 'Normal' in item['label']:
+        #     self.data['normal_flow_count'] += 1
+        # elif 'Background' in item['label']:
+        #     self.data['background_flow_count'] += 1
 
         # TODO: Add entropy for each of these cases.
         src_class = classify(item['srcaddr'])
@@ -214,7 +214,7 @@ class Summarizer:
 
         feature_list.append('Botnet' if self.is_attack else 'Normal')
         if self.bot is not None or self.attack is not None:
-            feature_list.append(self.bot if self.is_attack else 'Normal')
+            feature_list.append(str(self.bot) if self.is_attack else 'Normal')
             feature_list.append(str(self.attack))
 
         return feature_list
