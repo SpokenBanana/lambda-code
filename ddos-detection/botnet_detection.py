@@ -210,27 +210,27 @@ def dl_train(features, label, use_bots=False):
               kernel_initializer='random_uniform',
               activation='relu'))
     # Simple model
-    # model.add(Dropout(0.5))
-    # model.add(Dense(64, activation='relu'))
-    # model.add(Dropout(0.5))
+    model.add(Dropout(0.5))
+    model.add(Dense(64, activation='relu'))
+    model.add(Dropout(0.5))
 
     # TODO: Try tanh, dropout to .3, go to 1024
     # Best model
-    model.add(Dense(64, activation='relu'))
-    model.add(Dense(64, activation='relu'))
-    model.add(Dropout(0.3))
-    model.add(Dense(128, activation='relu'))
-    model.add(Dense(128, activation='relu'))
-    model.add(Dropout(0.3))
-    model.add(Dense(246, activation='relu'))
-    model.add(Dense(246, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(128, activation='relu'))
-    model.add(Dense(128, activation='relu'))
-    model.add(Dropout(0.4))
-    model.add(Dense(64, activation='relu'))
-    model.add(Dense(64, activation='relu'))
-    model.add(Dropout(0.4))
+    # model.add(Dense(64, activation='relu'))
+    # model.add(Dense(64, activation='relu'))
+    # model.add(Dropout(0.3))
+    # model.add(Dense(128, activation='relu'))
+    # model.add(Dense(128, activation='relu'))
+    # model.add(Dropout(0.3))
+    # model.add(Dense(246, activation='relu'))
+    # model.add(Dense(246, activation='relu'))
+    # model.add(Dropout(0.5))
+    # model.add(Dense(128, activation='relu'))
+    # model.add(Dense(128, activation='relu'))
+    # model.add(Dropout(0.4))
+    # model.add(Dense(64, activation='relu'))
+    # model.add(Dense(64, activation='relu'))
+    # model.add(Dropout(0.4))
 
     # TODO: Add labels for bot detection.
     if use_bots:
@@ -280,7 +280,7 @@ def dl_test_dict(model, features, label):
 
 def dl_test_proba(model, features, label, normal_thresh=.5):
     probas = model.predict_proba(features, verbose=False)
-    predicted = [(0 if prob[0] >= normal_thresh else 1) for prob in probas]
+    predicted = [(1 if prob[0] >= normal_thresh else 0) for prob in probas]
     metrics = ['accuracy', 'recall', 'precision', 'f1_score',
                'confusion_matrix']
     return dict(zip(metrics, (accuracy_score(label, predicted),
@@ -288,43 +288,6 @@ def dl_test_proba(model, features, label, normal_thresh=.5):
                               recall_score(label, predicted),
                               f1_score(label, predicted),
                               confusion_matrix(label, predicted))))
-
-
-def rf_train(features, label, use_attack=False, use_ahead=False, trees=50, max_features=None, class_weight='balanced'):
-    # TODO: Use more trees for background.
-    if use_attack or use_ahead:
-        clf = OneVsRestClassifier(
-            RandomForestClassifier(n_estimators=trees), n_jobs=3)
-        # bn = MultiLabelBinarizer()
-        clf.fit(features, label)
-    else:
-        clf = RandomForestClassifier(
-            class_weight=class_weight,
-            max_features=max_features,
-            # class_weight={0: 1, 1: 100},
-            n_estimators=trees, n_jobs=3)  # n_estimators=700)
-        clf.fit(features, label)
-    return clf
-
-
-def rf_compare_estimator_counts(xtrain, xtest, ytrain, ytest):
-    estimator_counts = [10, 50, 100, 200, 300, 500, 700]
-    scores = []
-    for estimator in estimator_counts:
-        clf = RandomForestClassifier(
-            # class_weight={ 0: 1, 1: 6 },
-            n_estimators=estimator,
-            n_jobs=3)
-        clf.fit(xtrain, ytrain)
-        _, _, _, f1_score = test(clf, xtest, ytest)
-        scores.append(f1_score)
-    return scores
-
-
-def dt_train(features, label):
-    clf = tree.DecisionTreeClassifier()
-    clf.fit(features, label)
-    return clf
 
 
 def test_proba(clf, features, label, normal_thresh=.5):
@@ -337,6 +300,43 @@ def test_proba(clf, features, label, normal_thresh=.5):
                               recall_score(label, predicted),
                               f1_score(label, predicted),
                               confusion_matrix(label, predicted))))
+
+
+def rf_train(features, label, use_attack=False, use_ahead=False, trees=50, max_features='auto', class_weight=None):
+    # TODO: Use more trees for background.
+    if use_attack or use_ahead:
+        clf = OneVsRestClassifier(
+            RandomForestClassifier(n_estimators=trees), n_jobs=3)
+        # bn = MultiLabelBinarizer()
+        clf.fit(features, label)
+    else:
+        clf = RandomForestClassifier(
+            class_weight=class_weight,
+            max_features=max_features,
+            # class_weight={0: 1, 1: 100},
+            n_estimators=trees, n_jobs=4)  # n_estimators=700)
+        clf.fit(features, label)
+    return clf
+
+
+def rf_compare_estimator_counts(xtrain, xtest, ytrain, ytest):
+    estimator_counts = [10, 50, 100, 200, 300, 500, 700]
+    scores = []
+    for estimator in estimator_counts:
+        clf = RandomForestClassifier(
+            # class_weight={ 0: 1, 1: 6 },
+            n_estimators=estimator,
+            n_jobs=4)
+        clf.fit(xtrain, ytrain)
+        _, _, _, f1_score = test(clf, xtest, ytest)
+        scores.append(f1_score)
+    return scores
+
+
+def dt_train(features, label):
+    clf = tree.DecisionTreeClassifier()
+    clf.fit(features, label)
+    return clf
 
 
 def test(clf, features, label, use_bots=False, use_attack=False,

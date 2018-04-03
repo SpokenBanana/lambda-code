@@ -80,7 +80,7 @@ def plot_rf_estimators(f1_scores, name, save=False):
     plt.plot(estimator_counts, f1_scores)
     plt.xticks(estimator_counts)
     plt.xlabel('Estimator counts')
-    plt.ylabel('f1_score')
+    plt.ylabel('F1 Score')
     plt.title(name)
     if save:
         plt.save(name + '.png')
@@ -138,7 +138,7 @@ def get_feature_from(filename, feature_name):
 def plot_histogram_of(filename, feature, save=False):
     matplotlib.rcParams['text.usetex'] = True
     matplotlib.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath,amssymb,amsfonts}']
-    name = filename.split('/')[1].split('.')[0]
+    name = filename.split('/')[1].split('.')[0].split('-')[0].upper()
     normal, botnets = get_feature_from(filename, feature)
     n_normal, bins_normal, patches_normal = plt.hist(
         normal, 50, facecolor='blue', alpha=.5)
@@ -154,7 +154,7 @@ def plot_histogram_of(filename, feature, save=False):
 def plot_scatter_of(filename, feature, save=False):
     matplotlib.rcParams['text.usetex'] = True
     matplotlib.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath,amssymb,amsfonts}']
-    name = filename.split('/')[1].split('.')[0]
+    name = filename.split('/')[1].split('.')[0].split('-')[0].upper()
     normal, botnets = get_feature_from(filename, feature)
     plt.scatter(range(len(normal)), normal, color='blue', s=5)
     plt.scatter(range(len(botnets)), botnets, color='red', s=5)
