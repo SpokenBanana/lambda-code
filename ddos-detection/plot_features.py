@@ -27,9 +27,9 @@ def plot_confusion_matrix(cm, classes,
 
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
-    plt.colorbar()
+    # plt.colorbar()
     tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45)
+    plt.xticks(tick_marks, classes)  # , rotation=45)
     plt.yticks(tick_marks, classes)
 
     fmt = '.2f' if normalize else 'd'
@@ -39,26 +39,32 @@ def plot_confusion_matrix(cm, classes,
                  horizontalalignment="center",
                  color="white" if cm[i, j] > thresh else "black")
 
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    plt.show()
+    # plt.tight_layout()
+    # plt.ylabel('True label')
+    # plt.xlabel('Predicted label')
+    # plt.show()
 
 
 def best_features(forest, feature, name, feature_names):
     matplotlib.rcParams['text.usetex'] = True
     matplotlib.rcParams['text.latex.preamble'] = [r'\usepackage{amsmath,amssymb,amsfonts}']
-    plt.figure(figsize=(10, 5))
+    # plt.figure(figsize=(10, 5))
     importances = forest.feature_importances_
     std = np.std([tree.feature_importances_ for tree in forest.estimators_],
                  axis=0)
     indices = np.argsort(importances)[::-1]
     plt.title('Importances for {}'.format(name))
-    plt.bar(range(feature.shape[1]), importances[indices],
+    
+    # Don't need to show all features.
+    indices = indices[:10]
+    
+    plt.bar(range(10), importances[indices],
             color='r', yerr=std[indices], align='center')
     features = [convert_to_greek(feature_names[i]) for i in indices]
-    plt.xticks(range(feature.shape[1]), features, rotation=90)
-    plt.xlim([-1, feature.shape[1]])
+    plt.xticks(range(10), features[:10])  # , rotation=90)
+    plt.ylabel('Importance Score [0, 1]')
+    plt.xlabel('Feaures')
+    # plt.xlim([-1, feature.shape[1]])
     plt.show()
     return indices
 
@@ -67,7 +73,7 @@ def plot_f1_per_interval(f1_scores, name, intervals, save=False):
     plt.plot(intervals, f1_scores)
     plt.xticks(intervals)
     plt.xlabel('Interval (seconds)')
-    plt.ylabel('f1_score')
+    plt.ylabel('F1 Score')
     plt.title(name)
     if save:
         plt.save(name + '.png')
@@ -81,7 +87,7 @@ def plot_rf_estimators(f1_scores, name, save=False):
     plt.xticks(estimator_counts)
     plt.xlabel('Estimator counts')
     plt.ylabel('F1 Score')
-    plt.title(name)
+    # plt.title(name)
     if save:
         plt.save(name + '.png')
     else:

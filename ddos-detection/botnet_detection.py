@@ -416,7 +416,7 @@ def test_dict(clf, features, label, use_ahead=False):
 
 
 def summary_of_detection(filename, model, use_bots=False, use_attack=False,
-                         sample=False, use_ahead=True, steps_ahead=1, trees=50):
+                         sample=False, use_ahead=False, steps_ahead=1, trees=50):
     """Genral call to train and test any model under any features."""
     if use_ahead:
         xtrain, xtest, ytrain, ytest = get_ahead_feature_labels(
@@ -441,18 +441,18 @@ def summary_of_detection(filename, model, use_bots=False, use_attack=False,
     return test(clf, xtest, ytest, use_bots, use_ahead=use_ahead)
 
 
-def get_plots_for_each_interval(attack_type, intervals):
+def get_plots_for_each_interval(attack_type, intervals, model='rf'):
     """clf is a Random Forest model to test this all on."""
     scores = []
     for interval in intervals:
         filename = 'minute_aggregated/{}-{}s.featureset.csv'.format(
             attack_type, interval)
         try:
-            _, _, _, f1_score = summary_of_detection(filename, 'rf')
+            _, _, _, f1_score = summary_of_detection(filename, model, trees=10)
         except:
             filename = 'minute_aggregated/{}-{}s.featureset.csv'.format(
                 attack_type, int(interval))
-            _, _, _, f1_score = summary_of_detection(filename, 'rf')
+            _, _, _, f1_score = summary_of_detection(filename, model, trees=10)
 
         scores.append(f1_score)
     return scores
