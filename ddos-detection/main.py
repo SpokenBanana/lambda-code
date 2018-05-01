@@ -7,6 +7,7 @@ from utils import save_results, get_classifier, get_file_num, \
         get_feature_labels, to_tf_label, get_start_time_for, TIME_FORMAT, \
         get_feature_order
 from summarizer import Summarizer
+import numpy as np
 
 
 FLAGS = flags.FLAGS
@@ -15,11 +16,13 @@ flags.DEFINE_string(
 flags.DEFINE_float(
     'interval', None, 'Interval in seconds to aggregate connections.')
 flags.DEFINE_bool('use_background',
-        False, 'To include background connections to the aggregation.')
+    False, 'To include background connections to the aggregation.')
 flags.DEFINE_bool('single',
-        False, 'Whether this is aggregating a single file or not.')
+    False, 'Whether this is aggregating a single file or not.')
 flags.DEFINE_bool('use_separator',
-        False, 'Whether this is aggregating a single file or not.')
+    False, 'Whether this is aggregating a single file or not.')
+flags.DEFINE_bool('norm_and_standardize',
+    False, 'To normalize and standardize the feature values.')
 
 
 def get_base_name(filename):
@@ -27,7 +30,7 @@ def get_base_name(filename):
 
 
 def aggregate_file(interval, file_name, output_name, bot=None, attack=None,
-        single=False, use_separator=False):
+        single=False, use_separator=False, norm_and_standardize=False):
     """ Aggregate the data within the windows of time
 
         interval:       time in seconds to aggregate data
@@ -77,6 +80,11 @@ def aggregate_file(interval, file_name, output_name, bot=None, attack=None,
 
     # Use this if you want a featureset for each file.
 
+    if norm_and_standardize:
+        temp = Summarizer()
+        features = ['avg_duration'] + list(temp.std_features.keys()) + list(temp.entropy_features.keys())
+        normalize_features(features, summaries)
+
     if single:
         basename = get_base_name(file_name)
         filename = 'minute_aggregated/{}-{}_ahead.aggregated.csv'.format(
@@ -87,6 +95,40 @@ def aggregate_file(interval, file_name, output_name, bot=None, attack=None,
     if use_separator:
         with open(output_name, 'a') as out:
             out.write('NEW FILE\n')
+
+
+def normalize_features(to_normalize, summaries):
+
+    # Just to compile each feature so we have all final values.
+    for summary in summaries:
+        summary.get_feature_list()
+
+    # Get all the features we want to normalize into a single array
+    for feature in to_normalize:
+        values = [summary.data[feature] for summary in summaries]
+        fmin = min(values)
+        fmax = max(values)
+        for summary in summaries:
+            summary.data[feature] = normalize(
+                summary.data[feature], fmin, fmax)
+
+        fmean = np.mean(values)
+        fstd = np.std(values)
+        for summary in summaries:
+            new_feature = 'standard_{}'.format(feature)
+            if new_feature not in summary.data:
+                summary.data[new_feature] = 0
+                summary.features.append(new_feature)
+            summary.data[new_feature] = standardize(
+                summary.data[feature], fmean, fstd)
+
+
+def normalize(x, xmin, xmax):
+    return (x - xmin) / (xmax - xmin)
+
+
+def standardize(x, mean, std):
+    return (x - mean) / std
 
 
 def append_to_ddos_featureset(summaries, output_name):
@@ -140,10 +182,11 @@ def main(_):
     p2p_files = ['binetflows/capture20110819.binetflow']
 
     # Set up the file that holds all this information.
-    output_name = 'minute_aggregated/{}{}{}-{}s.featureset.csv'.format(
+    output_name = 'minute_aggregated/{}{}{}{}-{}s.featureset.csv'.format(
         FLAGS.attack_type,
         '' if not FLAGS.use_background else '_background',
         '' if not FLAGS.use_separator else '_ahead',
+        '' if not FLAGS.norm_and_standardize else '_normed',
         FLAGS.interval)
     with open(output_name, 'w+') as out:
         out.write(','.join(Summarizer().features) + ',label{}\n'.format(
@@ -210,12 +253,15 @@ def main(_):
     elif FLAGS.single:
         attack_files = ['binetflows/capture2011081{}.binetflow'.format(FLAGS.attack_type)]
 
+    import gc
     for i, binet in enumerate(attack_files):
-        aggregate_file(FLAGS.interval, binet, output_name, bots[i], attack[i],
-                FLAGS.single, use_separator=FLAGS.use_separator)
+        gc.collect()
+        aggregate_file(
+            FLAGS.interval, binet, output_name, bots[i], attack[i],
+            FLAGS.single, use_separator=FLAGS.use_separator,
+            norm_and_standardize=FLAGS.norm_and_standardize)
 
     # Avoid error in keras
-    import gc
     gc.collect()
 
 

@@ -16,6 +16,7 @@ from keras.layers import Dense, Dropout
 from keras import backend as K
 from keras.utils import plot_model
 from sklearn import tree
+from sklearn.utils import class_weight
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import MultiLabelBinarizer, label_binarize
 from sklearn.multiclass import OneVsRestClassifier
@@ -33,6 +34,12 @@ from summarizer import Summarizer
 
 # TODO: Remove it.
 from plot_features import plot_multilabel_roc
+
+# TODO: Make an easier way to generate data into latex tables.
+LATEX_TABLE = """
+\\begin{table}
+\\end{table}
+"""
 
 
 def perform_search(params, feature, labels):
@@ -201,36 +208,34 @@ def to_normal(labels):
     return normals
 
 
-def dl_train(features, label, use_bots=False):
+def dl_train(features, label, use_bots=False, use_big_model=False,
+             use_class_weight=False):
     model = Sequential()
     # TODO: Try random initialization.
+    # TODO: Try using class weights for keras.
     model.add(
         Dense(64,
               input_dim=len(features[0]),
               kernel_initializer='random_uniform',
               activation='relu'))
-    # Simple model
-    model.add(Dropout(0.5))
-    model.add(Dense(64, activation='relu'))
-    model.add(Dropout(0.5))
-
-    # TODO: Try tanh, dropout to .3, go to 1024
-    # Best model
-    # model.add(Dense(64, activation='relu'))
-    # model.add(Dense(64, activation='relu'))
-    # model.add(Dropout(0.3))
-    # model.add(Dense(128, activation='relu'))
-    # model.add(Dense(128, activation='relu'))
-    # model.add(Dropout(0.3))
-    # model.add(Dense(246, activation='relu'))
-    # model.add(Dense(246, activation='relu'))
-    # model.add(Dropout(0.5))
-    # model.add(Dense(128, activation='relu'))
-    # model.add(Dense(128, activation='relu'))
-    # model.add(Dropout(0.4))
-    # model.add(Dense(64, activation='relu'))
-    # model.add(Dense(64, activation='relu'))
-    # model.add(Dropout(0.4))
+    if use_big_model:
+        # Simple model
+        model.add(Dropout(0.5))
+        model.add(Dense(64, activation='relu'))
+        model.add(Dropout(0.5))
+    else:
+        # Best model
+        model.add(Dense(64, activation='relu'))
+        model.add(Dense(64, activation='relu'))
+        model.add(Dropout(0.3))
+        model.add(Dense(128, activation='relu'))
+        model.add(Dense(128, activation='relu'))
+        model.add(Dropout(0.3))
+        model.add(Dense(246, activation='relu'))
+        model.add(Dense(246, activation='relu'))
+        model.add(Dropout(0.5))
+        model.add(Dense(512, activation='relu'))
+        model.add(Dense(512, activation='relu'))
 
     # TODO: Add labels for bot detection.
     if use_bots:
@@ -246,8 +251,12 @@ def dl_train(features, label, use_bots=False):
     else:
         label = np.reshape(label, (-1, 1))
 
-    model.fit(features, label, epochs=10, batch_size=32, verbose=False)
-    # plot_model(model)
+    weights = None
+    if use_class_weight:
+        weights = class_weight.compute_class_weight('balanced',
+                                                    [0, 1], label.flatten())
+    model.fit(features, label, epochs=10, batch_size=32, verbose=False,
+              class_weight=weights)
     return model
 
 
