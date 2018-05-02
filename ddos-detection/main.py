@@ -23,6 +23,8 @@ flags.DEFINE_bool('use_separator',
     False, 'Whether this is aggregating a single file or not.')
 flags.DEFINE_bool('norm_and_standardize',
     False, 'To normalize and standardize the feature values.')
+flags.DEFINE_string(
+    'custom_suffix', '', 'Just for debug')
 
 
 def get_base_name(filename):
@@ -69,22 +71,19 @@ def aggregate_file(interval, file_name, output_name, bot=None, attack=None,
             if window not in summaries:
                 summaries[window] = Summarizer(bot, attack)
             summaries[window].add(item)
+            if len(summaries) > 1000000:
+                print('What')
 
     summaries = [v for s, v in sorted(summaries.items()) if v.used]
-    total_connections = sum(s.data['n_conn'] for s in summaries)
-    print('Average Connection per interval: {}'.format(
-        total_connections / len(summaries)))
-    print('Got {}/{}'.format(len(summaries), total))
     print('{} botnets, {} normal, {} background'.format(botnets, normal,
           background))
-
-    # Use this if you want a featureset for each file.
 
     if norm_and_standardize:
         temp = Summarizer()
         features = ['avg_duration'] + list(temp.std_features.keys()) + list(temp.entropy_features.keys())
         normalize_features(features, summaries)
 
+    # Use this if you want a featureset for each file.
     if single:
         basename = get_base_name(file_name)
         filename = 'minute_aggregated/{}-{}_ahead.aggregated.csv'.format(
@@ -98,7 +97,6 @@ def aggregate_file(interval, file_name, output_name, bot=None, attack=None,
 
 
 def normalize_features(to_normalize, summaries):
-
     # Just to compile each feature so we have all final values.
     for summary in summaries:
         summary.get_feature_list()
@@ -182,11 +180,12 @@ def main(_):
     p2p_files = ['binetflows/capture20110819.binetflow']
 
     # Set up the file that holds all this information.
-    output_name = 'minute_aggregated/{}{}{}{}-{}s.featureset.csv'.format(
+    output_name = 'minute_aggregated/{}{}{}{}{}-{}s.featureset.csv'.format(
         FLAGS.attack_type,
         '' if not FLAGS.use_background else '_background',
         '' if not FLAGS.use_separator else '_ahead',
         '' if not FLAGS.norm_and_standardize else '_normed',
+        FLAGS.custom_suffix,
         FLAGS.interval)
     with open(output_name, 'w+') as out:
         out.write(','.join(Summarizer().features) + ',label{}\n'.format(

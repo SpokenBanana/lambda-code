@@ -56,6 +56,14 @@ def get_files(directory):
     return ['{}/{}'.format(directory, name) for name in files]
 
 
+def normalize(x, xmin, xmax):
+    return (x - xmin) / (xmax - xmin)
+
+
+def standardize(x, mean, std):
+    return (x - mean) / std
+
+
 def get_roc_metrics(clf, features, labels, sklearn=True):
     proba = clf.predict_proba(features)
     if sklearn:
@@ -147,7 +155,7 @@ def get_ahead_feature_labels(filename, feature_names, steps_ahead=1):
 
 def get_specific_features_from(filename, feature_names=None, use_bots=False,
                                use_attack=False, has_bots_and_attack=False,
-                               sample=False):
+                               sample=False, norm_and_standardize=False):
     features = []
     labels = []
     with open(filename, 'r+') as f:
@@ -187,9 +195,35 @@ def get_specific_features_from(filename, feature_names=None, use_bots=False,
         features = normal_feat + botnet_feat
         labels = normal_label + botnet_label
 
+    if norm_and_standardize:
+        temp = Summarizer()
+        to_norm = ['avg_duration'] + list(temp.std_features.keys()) + list(temp.entropy_features.keys())
+        normalize_features(header, to_norm, features)
+
     xtrain, xtest, ytrain, ytest = train_test_split(
         features, labels, test_size=.3, random_state=42)
     return np.array(xtrain), np.array(xtest), np.array(ytrain), np.array(ytest)
+
+
+def normalize_features(header, to_normalize, features):
+    # Get all the features we want to normalize into a single array
+    for feature in to_normalize:
+        index = header.index(feature)
+        values = [feature[index] for feature in features]
+        fmin = min(values)
+        fmax = max(values)
+        for i in range(len(features)):
+            try:
+                features[i][index] = normalize(
+                    features[i][index], fmin, fmax)
+            except:
+                features[i][index] = 0
+
+        fmean = np.mean(values)
+        fstd = np.std(values)
+        for i in range(len(features)):
+            features[i].append(standardize(
+                features[i][index], fmean, fstd))
 
 
 def to_tf_labels(labels):
@@ -425,7 +459,8 @@ def test_dict(clf, features, label, use_ahead=False):
 
 
 def summary_of_detection(filename, model, use_bots=False, use_attack=False,
-                         sample=False, use_ahead=False, steps_ahead=1, trees=50):
+                         sample=False, use_ahead=False, steps_ahead=1, trees=50,
+                         norm_and_standardize=False):
     """Genral call to train and test any model under any features."""
     if use_ahead:
         xtrain, xtest, ytrain, ytest = get_ahead_feature_labels(
@@ -433,7 +468,7 @@ def summary_of_detection(filename, model, use_bots=False, use_attack=False,
     else:
         xtrain, xtest, ytrain, ytest = get_specific_features_from(
             filename, Summarizer().features, use_bots, use_attack,
-            sample=sample)
+            sample=sample, norm_and_standardize=norm_and_standardize)
     if model == 'rf':
         clf = rf_train(xtrain, ytrain, use_attack, use_ahead, trees=trees)
     elif model == 'dt':

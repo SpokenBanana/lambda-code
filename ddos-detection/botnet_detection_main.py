@@ -20,6 +20,8 @@ flags.DEFINE_bool(
 flags.DEFINE_string('attack_type', None, 'Type of attack to train on.')
 flags.DEFINE_string('model_type', None, 'Type of model to train with.')
 flags.DEFINE_float('interval', None, 'Interval of the file to train on.')
+flags.DEFINE_bool(
+    'norm_and_standardize', False, 'To normalize and standardize the features')
 
 
 def main(_):
@@ -35,7 +37,8 @@ def main(_):
 
     result = summary_of_detection(
         f, FLAGS.model_type, FLAGS.use_bots, FLAGS.use_attacks,
-        FLAGS.use_attack, FLAGS.sample, use_ahead=FLAGS.use_ahead)
+        FLAGS.use_attack, FLAGS.sample, use_ahead=FLAGS.use_ahead,
+        norm_and_standardize=FLAGS.norm_and_standardize)
     print(result)
     print("Accuracy: {:.4f}, Precision: {:.4f}, Recall: {:.4f}, f1_score: {:.4f}".format(
         *result))
