@@ -4,6 +4,11 @@ from scipy.stats import entropy as entropy_vector
 
 
 class Summarizer:
+    __slots__ = ['bot', 'attack', 'features', 'entropy_features', 'std_features',
+                 'data', '_ips', '_packets', '_bytes', '_time', '_time_counter',
+                 '_states', '_dstports', '_srcports', 'src_to_dst', 'is_attack',
+                 '_duration', 'used']
+
     def __init__(self, bot=None, attack=None):
         self.bot = bot
         self.attack = attack
@@ -251,6 +256,14 @@ def classify(ip):
     elif 192 <= first <= 223:
         return 'c'
     return 'na'
+
+
+def normalize(x, xmin, xmax):
+    return (x - xmin) / (xmax - xmin)
+
+
+def standardize(x, mean, std):
+    return (x - mean) / std
 
 
 if __name__ == '__main__':
