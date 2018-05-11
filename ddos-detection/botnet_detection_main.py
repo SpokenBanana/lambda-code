@@ -36,10 +36,9 @@ def main(_):
             FLAGS.interval)
 
     result = summary_of_detection(
-        f, FLAGS.model_type, FLAGS.use_bots, FLAGS.use_attacks,
-        FLAGS.use_attack, FLAGS.sample, use_ahead=FLAGS.use_ahead,
+        f, FLAGS.model_type, FLAGS.use_bots, use_attack=FLAGS.use_attacks,
+        sample=FLAGS.sample, use_ahead=FLAGS.use_ahead,
         norm_and_standardize=FLAGS.norm_and_standardize)
-    print(result)
     print("Accuracy: {:.4f}, Precision: {:.4f}, Recall: {:.4f}, f1_score: {:.4f}".format(
         *result))
 

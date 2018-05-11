@@ -4,6 +4,7 @@ from scipy.stats import entropy as entropy_vector
 
 
 class Summarizer:
+    # Used to reduce amount of memory when aggregating. 
     __slots__ = ['bot', 'attack', 'features', 'entropy_features', 'std_features',
                  'data', '_ips', '_packets', '_bytes', '_time', '_time_counter',
                  '_states', '_dstports', '_srcports', 'src_to_dst', 'is_attack',
@@ -143,6 +144,7 @@ class Summarizer:
             sofar[1][item['totbytes']] += 1
             sofar[2][item['dur']] += 1
 
+        # Add to feature so we can calculate distribution by standard deviation.
         self._ips.append(item['srcaddr'])
         self.std_features['std_time'].append(float(item['dur']))
         self.std_features['std_packets'].append(float(item['totpkts']))
@@ -150,6 +152,7 @@ class Summarizer:
         self.std_features['std_srcbytes'].append(float(item['srcbytes']))
         self._time_counter[item['dur']] += 1
 
+        # Update all counters.
         self.entropy_features['entropy_time'][item['dur']] += 1
         self.entropy_features['entropy_state'][item['state']] += 1
         self.entropy_features['entropy_srcport'][item['sport']] += 1
@@ -159,15 +162,16 @@ class Summarizer:
         self.entropy_features['entropy_bytes'][item['totbytes']] += 1
         self.entropy_features['entropy_src_bytes'][item['srcbytes']] += 1
         self.entropy_features['entropy_packets'][item['totpkts']] += 1
+        self._states[item['state']] += 1
 
         try:
             self._srcports[item['sport']] += 1
             self._dstports[item['dport']] += 1
         except Exception:
-            pass
-        self._states[item['state']] += 1
+            pass  # Some port values are in a weird, non integer format, skip them.
 
-        # sometimes ports are in a weird format so exclude them for now
+
+        # Sometimes ports are in a weird format so exclude them for now
         try:
             if int(item['sport']) < 1024:
                 self.data['n_sports<1024'] += 1
@@ -190,12 +194,7 @@ class Summarizer:
 
         if 'Botnet' in item['label']:
             self.is_attack = 1
-        # elif 'Normal' in item['label']:
-        #     self.data['normal_flow_count'] += 1
-        # elif 'Background' in item['label']:
-        #     self.data['background_flow_count'] += 1
 
-        # TODO: Add entropy for each of these cases.
         src_class = classify(item['srcaddr'])
         dst_class = classify(item['dstaddr'])
         self.entropy_features['entropy_src_{}_ip'.format(src_class)][item['srcaddr']] += 1
@@ -248,7 +247,6 @@ def classify(ip):
     except Exception:
         return 'na'
 
-    # TODO: write a better way to classify this.
     if 1 <= first <= 126:
         return 'a'
     elif 128 <= first <= 191:
@@ -264,8 +262,3 @@ def normalize(x, xmin, xmax):
 
 def standardize(x, mean, std):
     return (x - mean) / std
-
-
-if __name__ == '__main__':
-    s = Summarizer()
-    print(list(s.data.keys()))

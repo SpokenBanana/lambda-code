@@ -22,7 +22,8 @@ flags.DEFINE_bool('single',
 flags.DEFINE_bool('use_separator',
     False, 'Whether this is aggregating a single file or not.')
 flags.DEFINE_bool('norm_and_standardize',
-    False, 'To normalize and standardize the feature values.')
+    False, 'To normalize and standardize the feature values. Not recommended, code in botnet_detection can do this '
+           'automatically, so just do the computation there.')
 flags.DEFINE_string(
     'custom_suffix', '', 'Just for debug')
 
@@ -71,8 +72,6 @@ def aggregate_file(interval, file_name, output_name, bot=None, attack=None,
             if window not in summaries:
                 summaries[window] = Summarizer(bot, attack)
             summaries[window].add(item)
-            if len(summaries) > 1000000:
-                print('What')
 
     summaries = [v for s, v in sorted(summaries.items()) if v.used]
     print('{} botnets, {} normal, {} background'.format(botnets, normal,
@@ -90,7 +89,7 @@ def aggregate_file(interval, file_name, output_name, bot=None, attack=None,
             basename, interval)
         write_featureset(filename, summaries)
     else:
-        append_to_ddos_featureset(summaries, output_name)
+        append_to_featureset(summaries, output_name)
     if use_separator:
         with open(output_name, 'a') as out:
             out.write('NEW FILE\n')
@@ -129,7 +128,7 @@ def standardize(x, mean, std):
     return (x - mean) / std
 
 
-def append_to_ddos_featureset(summaries, output_name):
+def append_to_featureset(summaries, output_name):
     with open(output_name, 'a') as out:
         for summary in summaries:
             out.write(','.join(summary.get_feature_list()) + '\n')
@@ -145,7 +144,7 @@ def write_featureset(filename, summaries):
 def main(_):
 
     binet_files = [
-            # UDP and ICMP
+        # UDP and ICMP
         'binetflows/capture20110815.binetflow',
         # UDP
         'binetflows/capture20110818.binetflow',
